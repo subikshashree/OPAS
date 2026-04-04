@@ -1,0 +1,8 @@
+{
+  "name": "OPAS - Online Process Automation System",
+  "description": "An enterprise-grade college management system featuring multi-role RBAC for students, faculty, parents, wardens, HODs, and admins with automated workflows for attendance, leave, and academic tracking.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
