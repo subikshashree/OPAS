@@ -1,0 +1,35 @@
+graph TD
+    subgraph Client [Client Side]
+        Browser[Web Browser]
+        HTML[HTML5 / CSS3 / Bootstrap]
+        JS[JavaScript / ES6]
+    end
+
+    subgraph Server [Server Side - Spring Boot]
+        Controller[REST Controllers]
+        Service[Service Layer]
+        Repository[JPA Repositories]
+        Security[Spring Security / JWT]
+        DTO[Data Transfer Objects]
+    end
+
+    subgraph Database [Data Storage]
+        MySQL[(MySQL Database)]
+    end
+
+    Browser -->|HTTP Request| Controller
+    Controller --> Service
+    Service --> Repository
+    Repository -->|SQL Query| MySQL
+    MySQL -->|Result Set| Repository
+    Repository --> Service
+    Service --> Controller
+    Controller -->|JSON Response| Browser
+
+    classDef client fill:#e1f5fe,stroke:#01579b,stroke-width:2px;
+    classDef server fill:#f3e5f5,stroke:#4a148c,stroke-width:2px;
+    classDef db fill:#fff3e0,stroke:#e65100,stroke-width:2px;
+
+    class Browser,HTML,JS client;
+    class Controller,Service,Repository,Security,DTO server;
+    class MySQL db;
