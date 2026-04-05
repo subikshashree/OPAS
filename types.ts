@@ -49,6 +49,7 @@ export interface User {
   department?: string;
   mentorId?: string;
   parentId?: string;
+  wardenId?: string;
   // Mentor (FACULTY) specific
   menteeIds?: string[];
   // Parent specific
