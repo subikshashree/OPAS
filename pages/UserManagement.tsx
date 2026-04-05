@@ -4,6 +4,8 @@ import { MOCK_USERS_LIST } from '../constants';
 import { GlassCard, GlassBadge, FloatingSphere, GlassButton } from '../components/ui';
 import { useToast } from '../hooks/useToast';
 
+const API_BASE = import.meta.env.VITE_API_URL || '/api/opas';
+
 const ROLES = [
   UserRole.STUDENT,
   UserRole.FACULTY,
@@ -16,6 +18,7 @@ const ROLES = [
 const UserManagement: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [selectedRoles, setSelectedRoles] = useState<Record<string, UserRole>>({});
+  const [isSyncing, setIsSyncing] = useState(false);
   const { showToast, ToastComponent } = useToast();
 
   // Modal State
@@ -24,14 +27,25 @@ const UserManagement: React.FC = () => {
   const [formMentor, setFormMentor] = useState<string>('');
   const [formWarden, setFormWarden] = useState<string>('');
 
-  useEffect(() => {
-    const savedUsers = localStorage.getItem('opas_users');
-    if (savedUsers) {
-      setUsers(JSON.parse(savedUsers));
-    } else {
-      setUsers(MOCK_USERS_LIST);
-      localStorage.setItem('opas_users', JSON.stringify(MOCK_USERS_LIST));
+  const fetchUsers = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/users`);
+      if (res.ok) {
+        const data = await res.json();
+        setUsers(data);
+      } else {
+        // Fallback to local storage
+        const savedUsers = localStorage.getItem('opas_users');
+        setUsers(savedUsers ? JSON.parse(savedUsers) : MOCK_USERS_LIST);
+      }
+    } catch (e) {
+      const savedUsers = localStorage.getItem('opas_users');
+      setUsers(savedUsers ? JSON.parse(savedUsers) : MOCK_USERS_LIST);
     }
+  };
+
+  useEffect(() => {
+    fetchUsers();
   }, []);
 
   const handleRoleChange = (userId: string, role: string) => {
@@ -42,17 +56,36 @@ const UserManagement: React.FC = () => {
     const newRole = selectedRoles[userId];
     if (!newRole) return;
 
+    setIsSyncing(true);
     try {
-      const updatedUsers = users.map(u => u.id === userId ? { ...u, roles: [newRole] } : u);
-      setUsers(updatedUsers);
-      localStorage.setItem('opas_users', JSON.stringify(updatedUsers));
-      showToast('User role updated successfully!', 'success');
-      
+      // ─── 1. Update Cloud Backend ───────────────────────────────
+      const res = await fetch(`${API_BASE}/users/${userId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role: newRole }),
+      });
+
+      if (res.ok) {
+        const updatedUser = await res.json();
+        const updatedUsers = users.map(u => u.id === userId ? updatedUser : u);
+        setUsers(updatedUsers);
+        localStorage.setItem('opas_users', JSON.stringify(updatedUsers));
+        showToast('User role updated in Cloud!', 'success');
+      } else {
+        throw new Error('Failed to update cloud');
+      }
+
       const nextRoles = { ...selectedRoles };
       delete nextRoles[userId];
       setSelectedRoles(nextRoles);
     } catch (e) {
-      showToast('Error updating user role', 'error');
+      // Fallback for local update
+      const updatedUsers = users.map(u => u.id === userId ? { ...u, roles: [newRole] } : u);
+      setUsers(updatedUsers);
+      localStorage.setItem('opas_users', JSON.stringify(updatedUsers));
+      showToast('Backend unavailable. Updated locally.', 'warning');
+    } finally {
+      setIsSyncing(false);
     }
   };
 
@@ -63,48 +96,59 @@ const UserManagement: React.FC = () => {
     setFormWarden(user.wardenId || '');
   };
 
-  const handleConfigSave = (e: React.FormEvent) => {
+  const handleConfigSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!configuringUser) return;
 
-    const oldParentId = configuringUser.parentId;
-    const oldMentorId = configuringUser.mentorId;
+    setIsSyncing(true);
+    try {
+      // ─── 1. Update Cloud Backend for the student ──────────────
+      const res = await fetch(`${API_BASE}/users/${configuringUser.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          parentId: formParent || null, 
+          mentorId: formMentor || null, 
+          wardenId: formWarden || null 
+        }),
+      });
 
-    const updatedUsers = users.map(u => {
-      // 1. Update the target student
-      if (u.id === configuringUser.id) {
-        return { ...u, parentId: formParent || undefined, mentorId: formMentor || undefined, wardenId: formWarden || undefined };
+      if (res.ok) {
+        // Also update parent/mentor symmetrically if they are in the list
+        // For simplicity in cloud mode, we fetch again or update local state
+        await fetchUsers();
+        showToast('Relationships synced to Cloud!', 'success');
+      } else {
+        throw new Error('Cloud update failed');
       }
-      
-      // 2. Set new mapping on assigned parent
-      if (u.id === formParent && formParent) {
-        return { ...u, wardId: configuringUser.id };
-      }
-      // Unlink old parent if changed
-      if (oldParentId && u.id === oldParentId && u.id !== formParent) {
-        return { ...u, wardId: undefined };
-      }
-
-      // 3. Set new mapping on assigned mentor
-      if (u.id === formMentor && formMentor) {
-        const mentees = u.menteeIds || [];
-        return { ...u, menteeIds: mentees.includes(configuringUser.id) ? mentees : [...mentees, configuringUser.id] };
-      }
-      // Unlink from old mentor
-      if (oldMentorId && u.id === oldMentorId && u.id !== formMentor) {
-        return { ...u, menteeIds: (u.menteeIds || []).filter(mid => mid !== configuringUser.id) };
-      }
-
-      return u;
-    });
-
-    setUsers(updatedUsers);
-    localStorage.setItem('opas_users', JSON.stringify(updatedUsers));
-    showToast('Student relationships saved successfully!', 'success');
-    setConfiguringUser(null);
+    } catch (e) {
+      // Local fallback logic
+      const oldParentId = configuringUser.parentId;
+      const oldMentorId = configuringUser.mentorId;
+      const updatedUsers = users.map(u => {
+        if (u.id === configuringUser.id) {
+          return { ...u, parentId: formParent || undefined, mentorId: formMentor || undefined, wardenId: formWarden || undefined };
+        }
+        if (u.id === formParent && formParent) return { ...u, wardId: configuringUser.id };
+        if (oldParentId && u.id === oldParentId && u.id !== formParent) return { ...u, wardId: undefined };
+        if (u.id === formMentor && formMentor) {
+          const mentees = u.menteeIds || [];
+          return { ...u, menteeIds: mentees.includes(configuringUser.id) ? mentees : [...mentees, configuringUser.id] };
+        }
+        if (oldMentorId && u.id === oldMentorId && u.id !== formMentor) {
+          return { ...u, menteeIds: (u.menteeIds || []).filter(mid => mid !== configuringUser.id) };
+        }
+        return u;
+      });
+      setUsers(updatedUsers);
+      localStorage.setItem('opas_users', JSON.stringify(updatedUsers));
+      showToast('Links saved locally.', 'warning');
+    } finally {
+      setIsSyncing(false);
+      setConfiguringUser(null);
+    }
   };
 
-  // Helper arrays for dropdowns
   const parentCandidates = users.filter(u => u.roles.includes(UserRole.PARENT));
   const mentorCandidates = users.filter(u => u.roles.includes(UserRole.FACULTY));
   const wardenCandidates = users.filter(u => u.roles.includes(UserRole.WARDEN));
@@ -115,9 +159,16 @@ const UserManagement: React.FC = () => {
       <FloatingSphere size={250} color="bg-rose-400" delay={0} className="-top-20 -left-20" />
       
       <GlassCard variant="gradient" glowColor="purple" className="p-8 md:p-10 relative z-10">
-        <GlassBadge variant="danger" className="mb-3">Administrator Privileges</GlassBadge>
-        <h1 className="text-3xl md:text-4xl font-extrabold text-slate-800 tracking-tight">User Management</h1>
-        <p className="text-slate-500 font-medium mt-1">Global directory, role assignment, and relationship configuration.</p>
+        <div className="flex justify-between items-start">
+          <div>
+            <GlassBadge variant="danger" className="mb-3">Global Directory (Cloud)</GlassBadge>
+            <h1 className="text-3xl md:text-4xl font-extrabold text-slate-800 tracking-tight">User Management</h1>
+            <p className="text-slate-500 font-medium mt-1">Role assignment and relationship configuration synced to MongoDB.</p>
+          </div>
+          <GlassButton variant="secondary" size="sm" onClick={fetchUsers} disabled={isSyncing}>
+            {isSyncing ? 'Syncing...' : 'Refresh'}
+          </GlassButton>
+        </div>
       </GlassCard>
 
       <GlassCard variant="light" className="p-0 overflow-hidden relative z-10">
@@ -136,8 +187,6 @@ const UserManagement: React.FC = () => {
             <tbody className="divide-y divide-white/40">
               {users.map(user => {
                 const currentPrimaryRole = user.roles[0];
-                
-                // Helper to resolve a name by ID
                 const resolveName = (id?: string) => {
                   if (!id) return '';
                   const found = users.find(u => u.id === id);
@@ -183,6 +232,7 @@ const UserManagement: React.FC = () => {
                         className="bg-white/50 border border-slate-200 rounded-lg px-3 py-1.5 text-sm font-semibold focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 w-36"
                         value={selectedRoles[user.id] || currentPrimaryRole}
                         onChange={(e) => handleRoleChange(user.id, e.target.value)}
+                        disabled={isSyncing}
                       >
                         {ROLES.map(r => (
                           <option key={r} value={r}>
@@ -197,6 +247,7 @@ const UserManagement: React.FC = () => {
                           variant="secondary" 
                           size="sm" 
                           onClick={() => handleOpenConfig(user)}
+                          disabled={isSyncing}
                         >
                           Configure
                         </GlassButton>
@@ -205,9 +256,9 @@ const UserManagement: React.FC = () => {
                         variant="primary" 
                         size="sm" 
                         onClick={() => handleUpdate(user.id)}
-                        disabled={!selectedRoles[user.id] || selectedRoles[user.id] === currentPrimaryRole}
+                        disabled={isSyncing || !selectedRoles[user.id] || selectedRoles[user.id] === currentPrimaryRole}
                       >
-                        Save Role
+                        {isSyncing ? '...' : 'Save Role'}
                       </GlassButton>
                     </td>
                   </tr>
@@ -223,7 +274,7 @@ const UserManagement: React.FC = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white/95 border border-white p-8 rounded-3xl shadow-2xl max-w-md w-full animate-in zoom-in-95 duration-200 relative">
             <h2 className="text-xl font-extrabold text-slate-800 tracking-tight">Configure Connections</h2>
-            <p className="text-sm font-medium text-slate-500 mt-1 mb-6">Mapping guardians and faculty for <strong className="text-indigo-600">{configuringUser.name}</strong> (<span className="font-mono">{configuringUser.id}</span>)</p>
+            <p className="text-sm font-medium text-slate-500 mt-1 mb-6">Mapping guardians and faculty for <strong className="text-indigo-600">{configuringUser.name}</strong></p>
             
             <form onSubmit={handleConfigSave} className="space-y-4">
               <div>
@@ -270,7 +321,9 @@ const UserManagement: React.FC = () => {
 
               <div className="flex gap-3 pt-4">
                 <GlassButton variant="secondary" onClick={() => setConfiguringUser(null)} className="flex-1 justify-center">Cancel</GlassButton>
-                <GlassButton variant="primary" type="submit" className="flex-1 justify-center">Save Links</GlassButton>
+                <GlassButton variant="primary" type="submit" className="flex-1 justify-center" disabled={isSyncing}>
+                  {isSyncing ? 'Syncing...' : 'Save Links'}
+                </GlassButton>
               </div>
             </form>
           </div>

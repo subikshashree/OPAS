@@ -9,3 +9,5 @@ target
 .vscode
 opas_data/
 node/
+
+backend/.env

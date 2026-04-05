@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect, createContext, useContext } from 'react';
-import { HashRouter, Routes, Route, Navigate, Link, useLocation, useNavigate } from 'react-router-dom';
+import { HashRouter, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom';
 import { UserRole, User } from './types';
 import { MOCK_USERS_LIST, NAV_ITEMS } from './constants';
 import Dashboard from './pages/Dashboard';
@@ -13,6 +12,8 @@ import DepartmentManagement from './pages/DepartmentManagement';
 import Login from './pages/Login';
 import CommandPalette from './components/CommandPalette';
 import NotificationsDropdown from './components/NotificationsDropdown';
+
+const API_BASE = import.meta.env.VITE_API_URL || '/api/opas';
 
 // Auth Context
 interface AuthContextType {
@@ -38,7 +39,6 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, logout } = useAuth();
   const location = useLocation();
-  const [showNotifications, setShowNotifications] = useState(false);
   const [showPalette, setShowPalette] = useState(false);
 
   // Global hotkey for Command Palette overlay
@@ -60,7 +60,6 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
   return (
     <div className="relative min-h-screen bg-[#e8e5df] overflow-hidden flex flex-col font-sans selection:bg-indigo-200">
-      {/* Background Decorators — vibrant orbs visible through glass */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
         <div className="absolute top-[-15%] left-[-5%] w-[45%] h-[45%] bg-purple-400/40 rounded-full blur-[120px]" />
         <div className="absolute top-[10%] right-[-8%] w-[35%] h-[45%] bg-cyan-400/30 rounded-full blur-[120px]" />
@@ -69,10 +68,8 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         <div className="absolute bottom-[10%] right-[5%] w-[25%] h-[25%] bg-emerald-300/20 rounded-full blur-[100px]" />
       </div>
 
-      {/* Floating Top Navigation */}
       <header className="fixed top-4 left-4 right-4 z-50 flex justify-center">
         <nav className="glass-panel w-full max-w-6xl px-6 py-3 flex items-center justify-between">
-          {/* Logo */}
           <div className="flex items-center gap-3">
              <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center font-bold text-white text-xl shadow-[0_4px_20px_rgba(99,102,241,0.4)] border border-white/20">
                 O
@@ -80,7 +77,6 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
              <span className="text-slate-800 font-bold text-xl tracking-tight hidden sm:block">OPAS</span>
           </div>
 
-          {/* Conditional Navigation Links */}
           {!['PARENT', 'HOD', 'WARDEN', 'FACULTY'].includes(primaryRole) ? (
             <div className="hidden md:flex items-center gap-1 p-1 bg-white/15 rounded-2xl border border-white/25 backdrop-blur-md">
               {currentNav.map((item) => {
@@ -105,9 +101,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             <div className="hidden md:flex items-center gap-1 p-1" />
           )}
 
-          {/* Right Actions */}
           <div className="flex items-center gap-4">
-             {/* Search */}
              <div 
                className="hidden lg:flex relative items-center cursor-pointer group"
                onClick={() => setShowPalette(true)}
@@ -121,10 +115,8 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                 />
              </div>
              
-             {/* Notifications */}
              <NotificationsDropdown />
 
-             {/* Profile */}
              <Link to="/profile" className="flex items-center gap-3 bg-white/30 border border-white/40 pl-2 pr-4 py-1.5 rounded-2xl cursor-pointer hover:bg-white/50 transition-colors">
                 <img src={user.avatar} className="w-8 h-8 rounded-full border border-white/60 object-cover" alt="Avatar" />
                 <div className="hidden sm:block text-left">
@@ -133,7 +125,6 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                 </div>
              </Link>
 
-             {/* Logout Button */}
              <button 
                onClick={logout}
                title="Sign Out"
@@ -145,14 +136,12 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         </nav>
       </header>
 
-      {/* Main Content Area */}
       <main className="flex-1 flex flex-col items-center pt-32 pb-12 px-4 relative z-10 w-full">
         <div className="w-full max-w-6xl">
           {children}
         </div>
       </main>
 
-      {/* Render the Global Command Palette */}
       <CommandPalette 
         isOpen={showPalette} 
         onClose={() => setShowPalette(false)} 
@@ -170,6 +159,28 @@ export default function App() {
     const saved = localStorage.getItem('opas_user');
     return saved ? JSON.parse(saved) : null;
   });
+
+  // ─── Cloud Sync Effect ─────────────────────────────────────────
+  // Re-fetch user data whenever the app loads to ensure role sync
+  useEffect(() => {
+    const syncWithCloud = async () => {
+      if (!user || !user.email) return;
+      try {
+        const res = await fetch(`${API_BASE}/users/email/${user.email}`);
+        if (res.ok) {
+          const cloudData = await res.json();
+          // Update local state and storage with latest from MongoDB
+          setUser(cloudData);
+          localStorage.setItem('opas_user', JSON.stringify(cloudData));
+          console.log('🔄 Session synced with Cloud MongoDB');
+        }
+      } catch (_e) {
+        console.warn('⚠️ Cloud sync failed. Using local session.');
+      }
+    };
+    
+    syncWithCloud();
+  }, []);
 
   const login = (userData: User) => {
     setUser(userData);
