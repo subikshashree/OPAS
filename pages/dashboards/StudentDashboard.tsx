@@ -5,6 +5,7 @@ import { UserRole, LeaveRequest } from '../../types';
 import { MOCK_ACADEMIC_DATA, MOCK_ATTENDANCE, MOCK_PLACEMENT, MOCK_TASKS, MOCK_USERS_LIST } from '../../constants';
 import { GlassCard, GlassButton, GlassBadge, FloatingSphere } from '../../components/ui';
 import { getWorkflowSteps } from '../../hooks/useLeaveWorkflow';
+import { useToast } from '../../hooks/useToast';
 
 const StudentDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -41,10 +42,11 @@ const StudentDashboard: React.FC = () => {
   const pendingTasks = localTasks.filter(t => t.status === 'PENDING');
   const completedTasks = localTasks.filter(t => t.status === 'COMPLETED');
   const overdueTasks = localTasks.filter(t => t.status === 'OVERDUE');
+  const { showToast, ToastComponent } = useToast();
 
   const handleTaskSubmit = (taskId: string) => {
     setLocalTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: 'COMPLETED' } : t));
-    alert('Task submitted successfully! Awaiting mentor review.');
+    showToast('Task submitted successfully! Awaiting mentor review.', 'success');
   };
 
   const tabs = [
@@ -57,6 +59,7 @@ const StudentDashboard: React.FC = () => {
 
   return (
     <div className="space-y-8 relative animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <ToastComponent />
       <FloatingSphere size={150} color="bg-indigo-400" delay={0} className="-top-10 -left-20" />
       <FloatingSphere size={80} color="bg-cyan-300" delay={2} className="top-20 right-10" />
 

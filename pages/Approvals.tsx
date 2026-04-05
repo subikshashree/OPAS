@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../App';
 import { UserRole, LeaveRequest } from '../types';
 import { GlassCard, GlassButton, GlassBadge, FloatingSphere } from '../components/ui';
+import { useToast } from '../hooks/useToast';
 
 const MOCK_REQUESTS: LeaveRequest[] = [
   {
@@ -42,10 +43,11 @@ const MOCK_REQUESTS: LeaveRequest[] = [
 const Approvals: React.FC = () => {
   const { user } = useAuth();
   const [requests, setRequests] = useState<LeaveRequest[]>(MOCK_REQUESTS);
+  const { showToast, ToastComponent } = useToast();
 
   const handleAction = (id: string, approved: boolean) => {
     setRequests(prev => prev.filter(r => r.id !== id));
-    alert(`Request ${approved ? 'Authorized' : 'Terminated'} successfully! Workflow updated.`);
+    showToast(`Request ${approved ? 'Authorized' : 'Terminated'} successfully! Workflow updated.`, approved ? 'success' : 'error');
   };
 
   const filteredRequests = requests.filter(req => {
@@ -58,6 +60,7 @@ const Approvals: React.FC = () => {
 
   return (
     <div className="space-y-8 animate-in fade-in zoom-in-95 duration-700 relative z-10">
+      <ToastComponent />
       <FloatingSphere size={250} color="bg-rose-400" delay={0} className="-top-20 -left-20 mix-blend-multiply opacity-20" />
       
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/20 p-6 rounded-3xl border border-white/40 backdrop-blur-md shadow-sm">

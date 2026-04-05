@@ -4,11 +4,13 @@ import { useAuth } from '../../App';
 import { UserRole, LeaveRequest } from '../../types';
 import { MOCK_USERS_LIST, MOCK_ATTENDANCE, MOCK_PLACEMENT } from '../../constants';
 import { GlassCard, GlassButton, GlassBadge, FloatingSphere } from '../../components/ui';
+import { useToast } from '../../hooks/useToast';
 
 const ParentDashboard: React.FC = () => {
   const { user } = useAuth();
   const { tab } = useParams<{ tab: string }>();
   const navigate = useNavigate();
+  const { showToast, ToastComponent } = useToast();
   
   const activeTab = tab || 'ward';
   const [allLeaves, setAllLeaves] = useState<LeaveRequest[]>([]);
@@ -55,11 +57,12 @@ const ParentDashboard: React.FC = () => {
     });
     setAllLeaves(updated);
     localStorage.setItem('opas_my_leaves', JSON.stringify(updated));
-    alert(approved ? 'Leave application authorized successfully!' : 'Leave application rejected!');
+    showToast(approved ? 'Leave application authorized successfully!' : 'Leave application rejected!', approved ? 'success' : 'error');
   };
 
   return (
     <div className="space-y-8 relative animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <ToastComponent />
       <FloatingSphere size={180} color="bg-emerald-300" delay={0} className="-top-10 -left-20" />
 
       {/* Hero */}

@@ -4,11 +4,13 @@ import { useAuth } from '../../App';
 import { UserRole, LeaveRequest } from '../../types';
 import { MOCK_USERS_LIST, MOCK_MENTOR_ANALYSIS, MOCK_TASKS } from '../../constants';
 import { GlassCard, GlassButton, GlassBadge, FloatingSphere } from '../../components/ui';
+import { useToast } from '../../hooks/useToast';
 
 const MentorDashboard: React.FC = () => {
   const { user } = useAuth();
   const { tab } = useParams<{ tab: string }>();
   const navigate = useNavigate();
+  const { showToast, ToastComponent } = useToast();
   
   const activeTab = tab || 'mentees';
   const [allLeaves, setAllLeaves] = useState<LeaveRequest[]>([]);
@@ -48,7 +50,7 @@ const MentorDashboard: React.FC = () => {
     });
     setAllLeaves(updated);
     localStorage.setItem('opas_my_leaves', JSON.stringify(updated));
-    alert(approved ? 'Leave application approved!' : 'Leave application rejected!');
+    showToast(approved ? 'Leave application approved!' : 'Leave application rejected!', approved ? 'success' : 'error');
   };
 
   const tabs = [
@@ -61,6 +63,7 @@ const MentorDashboard: React.FC = () => {
 
   return (
     <div className="space-y-8 relative animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <ToastComponent />
       <FloatingSphere size={200} color="bg-purple-400" delay={1} className="-top-20 -right-20" />
 
       {/* Hero */}

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { User, UserRole } from '../types';
 import { MOCK_USERS_LIST } from '../constants';
 import { GlassCard, GlassBadge, FloatingSphere, GlassButton } from '../components/ui';
+import { useToast } from '../hooks/useToast';
 
 const ROLES = [
   UserRole.STUDENT,
@@ -16,6 +17,7 @@ const UserManagement: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
   // Store the selected role for each user ID
   const [selectedRoles, setSelectedRoles] = useState<Record<string, UserRole>>({});
+  const { showToast, ToastComponent } = useToast();
 
   useEffect(() => {
     // In a real app, this would be a GET request to the database
@@ -50,7 +52,7 @@ const UserManagement: React.FC = () => {
       setUsers(updatedUsers);
       localStorage.setItem('opas_users', JSON.stringify(updatedUsers));
       
-      alert('User role updated successfully!');
+      showToast('User role updated successfully!', 'success');
       
       // Clear the dropdown selection after save
       const nextRoles = { ...selectedRoles };
@@ -58,12 +60,13 @@ const UserManagement: React.FC = () => {
       setSelectedRoles(nextRoles);
 
     } catch (e) {
-      alert('Error updating user role');
+      showToast('Error updating user role', 'error');
     }
   };
 
   return (
     <div className="space-y-8 relative animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <ToastComponent />
       <FloatingSphere size={250} color="bg-rose-400" delay={0} className="-top-20 -left-20" />
       
       <GlassCard variant="gradient" glowColor="purple" className="p-8 md:p-10 relative z-10">
