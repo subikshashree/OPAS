@@ -77,6 +77,7 @@ app.post('/api/opas/auth/login', async (req, res) => {
     // Auto-register new user as STUDENT
     const numericId = String(100000 + Math.floor(Math.random() * 900000));
     const newUser = {
+      _id: numericId,
       name: name || normalizedEmail.split('@')[0],
       email: normalizedEmail,
       roles: ['STUDENT'],

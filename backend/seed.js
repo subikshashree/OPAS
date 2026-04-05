@@ -10,6 +10,7 @@ const MONGO_URI = `mongodb+srv://${MONGO_USER}:${MONGO_PASS}@${MONGO_HOST}/?retr
 
 const sampleUsers = [
   {
+    _id: '990001',
     name: 'System Admin',
     email: 'admin@opas.edu',
     roles: ['ADMIN'],
@@ -19,6 +20,7 @@ const sampleUsers = [
     createdAt: new Date().toISOString()
   },
   {
+    _id: '880002',
     name: 'Dr. Sarah Head',
     email: 'hod@opas.edu',
     roles: ['HOD'],
@@ -28,6 +30,7 @@ const sampleUsers = [
     createdAt: new Date().toISOString()
   },
   {
+    _id: '770003',
     name: 'Mr. James Warden',
     email: 'warden@opas.edu',
     roles: ['WARDEN'],
@@ -38,6 +41,7 @@ const sampleUsers = [
     createdAt: new Date().toISOString()
   },
   {
+    _id: '660004',
     name: 'Prof. Alan Mentor',
     email: 'faculty@opas.edu',
     roles: ['FACULTY'],
@@ -47,6 +51,7 @@ const sampleUsers = [
     createdAt: new Date().toISOString()
   },
   {
+    _id: '550005',
     name: 'Robert Parent Sr.',
     email: 'parent@opas.edu',
     roles: ['PARENT'],
@@ -55,6 +60,7 @@ const sampleUsers = [
     createdAt: new Date().toISOString()
   },
   {
+    _id: '108422',
     name: 'Bob Student Jr.',
     email: 'student@opas.edu',
     roles: ['STUDENT'],
