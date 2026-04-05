@@ -11,6 +11,7 @@ import Profile from './pages/Profile';
 import UserManagement from './pages/UserManagement';
 import DepartmentManagement from './pages/DepartmentManagement';
 import Login from './pages/Login';
+import CommandPalette from './components/CommandPalette';
 
 // Auth Context
 interface AuthContextType {
@@ -37,6 +38,19 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, logout } = useAuth();
   const location = useLocation();
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showPalette, setShowPalette] = useState(false);
+
+  // Global hotkey for Command Palette overlay
+  useEffect(() => {
+    const handleGlobalK = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setShowPalette(true);
+      }
+    };
+    window.addEventListener('keydown', handleGlobalK);
+    return () => window.removeEventListener('keydown', handleGlobalK);
+  }, []);
 
   if (!user) return null;
 
@@ -93,12 +107,16 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           {/* Right Actions */}
           <div className="flex items-center gap-4">
              {/* Search */}
-             <div className="hidden lg:flex relative items-center">
-                <span className="absolute left-3 text-slate-400">🔍</span>
+             <div 
+               className="hidden lg:flex relative items-center cursor-pointer group"
+               onClick={() => setShowPalette(true)}
+             >
+                <span className="absolute left-3 text-slate-400 group-hover:text-indigo-500 transition-colors">🔍</span>
                 <input 
                   type="text" 
                   placeholder="Command ⌘K" 
-                  className="bg-white/40 border border-white/50 text-sm focus:bg-white/60 focus:ring-2 focus:ring-indigo-400/50 outline-none rounded-2xl pl-9 pr-4 py-2 w-48 transition-all"
+                  readOnly
+                  className="bg-white/40 border border-white/50 text-sm hover:bg-white/60 focus:bg-white/60 cursor-pointer outline-none rounded-2xl pl-9 pr-4 py-2 w-48 transition-all pointer-events-none"
                 />
              </div>
              
@@ -169,6 +187,12 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           {children}
         </div>
       </main>
+
+      {/* Render the Global Command Palette */}
+      <CommandPalette 
+        isOpen={showPalette} 
+        onClose={() => setShowPalette(false)} 
+      />
     </div>
   );
 };
