@@ -35,7 +35,10 @@ const Profile: React.FC = () => {
             </div>
             <div className="text-center bg-white/40 px-6 py-3 rounded-2xl border border-white/60 shadow-sm backdrop-blur-md">
                <p className="text-[10px] text-slate-400 font-extrabold uppercase tracking-widest">Initialization</p>
-               <p className="font-extrabold text-slate-700 mt-1">Aug 2024</p>
+               <p className="font-extrabold text-slate-700 mt-1">
+                 {/* @ts-ignore - Check for createdAt explicitly but fallback cleanly */}
+                 {user?.['createdAt'] ? new Date(user['createdAt']).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : 'Recently'}
+               </p>
             </div>
           </div>
         </div>
@@ -50,15 +53,19 @@ const Profile: React.FC = () => {
           <div className="space-y-5">
             <div className="p-4 bg-white/30 rounded-2xl border border-white/40 transition-colors hover:bg-white/50">
               <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-1">Primary Node</p>
-              <p className="font-semibold text-slate-700">+1 234 567 890</p>
+              <p className="font-semibold text-slate-700">{user?.phone || 'Not Configured'}</p>
             </div>
             <div className="p-4 bg-white/30 rounded-2xl border border-white/40 transition-colors hover:bg-white/50">
-              <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-1">Alias Email</p>
-              <p className="font-semibold text-slate-700">personal.mail@provider.com</p>
+              <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-1">System Identifier</p>
+              <p className="font-semibold text-slate-700">{user?.email}</p>
             </div>
             <div className="p-4 bg-white/30 rounded-2xl border border-white/40 transition-colors hover:bg-white/50">
               <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-1">Sector Address</p>
-              <p className="font-semibold text-slate-700">123 College Ave, Campus West, City, 56789</p>
+              <p className="font-semibold text-slate-700">
+                {user?.isHosteler 
+                  ? `${user.hostelBlock || 'Hostel Block'}, Room ${user.roomNumber || 'TBA'}` 
+                  : `Department of ${user?.department || 'Unassigned Sector'}`}
+              </p>
             </div>
           </div>
         </GlassCard>

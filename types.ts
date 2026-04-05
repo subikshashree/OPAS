@@ -121,7 +121,9 @@ export interface LeaveRequest {
   studentDepartment?: string;
   residentialType: ResidentialType;
   startDate: string;
+  startTime?: string;
   endDate: string;
+  endTime?: string;
   type: LeaveType;
   reason: string;
   status: LeaveStatus;

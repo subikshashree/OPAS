@@ -11,9 +11,18 @@ const LeaveForm: React.FC = () => {
   const [formData, setFormData] = useState({
     type: 'SICK' as LeaveType,
     startDate: '',
+    startTime: '',
     endDate: '',
+    endTime: '',
     reason: '',
   });
+
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  React.useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -42,12 +51,15 @@ const LeaveForm: React.FC = () => {
       studentId: user.studentId || user.id,
       studentName: user.name,
       startDate: formData.startDate,
+      startTime: formData.startTime,
       endDate: formData.endDate,
+      endTime: formData.endTime,
       type: formData.type,
       reason: formData.reason,
       status: initialStatus,
       approvals: [],
-      appliedAt: new Date().toISOString()
+      // Ensure applied time perfectly matches what the user saw
+      appliedAt: currentTime.toISOString()
     };
 
     // Save to localStorage so it persists on the frontend
@@ -97,13 +109,26 @@ const LeaveForm: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-2">Start Date</label>
-              <GlassInput type="date" required value={formData.startDate} onChange={(e) => setFormData({...formData, startDate: e.target.value})} />
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest pl-2">Start Date</label>
+                <GlassInput type="date" required value={formData.startDate} onChange={(e) => setFormData({...formData, startDate: e.target.value})} />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest pl-2">From Time</label>
+                <GlassInput type="time" required value={formData.startTime} onChange={(e) => setFormData({...formData, startTime: e.target.value})} />
+              </div>
             </div>
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-2">End Date</label>
-              <GlassInput type="date" required value={formData.endDate} onChange={(e) => setFormData({...formData, endDate: e.target.value})} />
+            
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest pl-2">End Date</label>
+                <GlassInput type="date" required value={formData.endDate} onChange={(e) => setFormData({...formData, endDate: e.target.value})} />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest pl-2">To Time</label>
+                <GlassInput type="time" required value={formData.endTime} onChange={(e) => setFormData({...formData, endTime: e.target.value})} />
+              </div>
             </div>
           </div>
 
@@ -141,6 +166,17 @@ const LeaveForm: React.FC = () => {
               </div>
             )}
             {formData.type === 'SICK' && <p className="text-[10px] text-slate-400 font-medium mt-1">⏱ Maximum duration: 8 hours</p>}
+          </div>
+
+          <div className="flex items-center justify-between mt-4 p-4 bg-slate-50/50 rounded-2xl border border-slate-200">
+             <div>
+                <p className="text-[10px] text-slate-400 font-extrabold uppercase tracking-widest">System Record Apply Time</p>
+                <p className="font-mono text-sm font-bold text-slate-700 tracking-tight">{currentTime.toLocaleTimeString()} • {currentTime.toLocaleDateString()}</p>
+             </div>
+             <div>
+                <p className="text-[10px] text-emerald-500 font-extrabold uppercase tracking-widest text-right">Time-Synched</p>
+                <p className="text-xs text-slate-400 font-medium">Auto-stamped on submit</p>
+             </div>
           </div>
 
           <GlassButton 
