@@ -1,0 +1,224 @@
+@import "tailwindcss";
+
+@theme {
+  --color-glass-surface: rgba(255, 255, 255, 0.12);
+  --color-glass-surface-hover: rgba(255, 255, 255, 0.18);
+  --color-glass-surface-active: rgba(255, 255, 255, 0.22);
+  --color-glass-border: rgba(255, 255, 255, 0.35);
+  --color-glass-border-strong: rgba(255, 255, 255, 0.5);
+  
+  --color-glass-lavender: rgba(214, 188, 250, 0.18);
+  --color-glass-cyan: rgba(165, 243, 252, 0.18);
+  --color-glass-blue: rgba(191, 219, 254, 0.18);
+  --color-glass-mint: rgba(167, 243, 208, 0.18);
+  --color-glass-violet: rgba(196, 181, 253, 0.18);
+
+  --font-sans: "Inter", "SF Pro", "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  
+  --shadow-glass-soft: 0 8px 32px rgba(0, 0, 0, 0.06), 0 2px 8px rgba(0, 0, 0, 0.04);
+  --shadow-glass-strong: 0 20px 60px rgba(0, 0, 0, 0.08), 0 4px 16px rgba(0, 0, 0, 0.04);
+  --shadow-glass-inset: inset 0 1px 2px rgba(255, 255, 255, 0.5), inset 0 -1px 2px rgba(0, 0, 0, 0.03);
+  --shadow-glass-glow-blue: 0 0 40px rgba(59, 130, 246, 0.15), 0 0 80px rgba(59, 130, 246, 0.08);
+  --shadow-glass-glow-purple: 0 0 40px rgba(168, 85, 247, 0.15), 0 0 80px rgba(168, 85, 247, 0.08);
+  --shadow-glass-neumorphic: 8px 8px 24px rgba(0, 0, 0, 0.06), -4px -4px 16px rgba(255, 255, 255, 0.8);
+
+  --blur-glass: blur(24px);
+  --blur-glass-heavy: blur(50px);
+}
+
+@layer base {
+  body {
+    @apply bg-[#e8e5df] text-slate-900 m-0 p-0 overflow-x-hidden;
+    background-image: 
+      radial-gradient(ellipse at 20% 10%, rgba(196, 181, 253, 0.25) 0px, transparent 50%),
+      radial-gradient(ellipse at 80% 20%, rgba(147, 197, 253, 0.2) 0px, transparent 50%),
+      radial-gradient(ellipse at 60% 80%, rgba(214, 188, 250, 0.2) 0px, transparent 50%),
+      radial-gradient(ellipse at 10% 90%, rgba(167, 243, 208, 0.15) 0px, transparent 50%),
+      radial-gradient(ellipse at 90% 70%, rgba(252, 165, 165, 0.1) 0px, transparent 50%);
+    background-attachment: fixed;
+  }
+}
+
+@layer utilities {
+  /* ── True Glass Panel (transparent, visible depth) ── */
+  .glass-panel {
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.35) 0%,
+      rgba(255, 255, 255, 0.12) 40%,
+      rgba(255, 255, 255, 0.08) 100%
+    );
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.45);
+    border-radius: 1.5rem;
+    box-shadow: 
+      var(--shadow-glass-neumorphic),
+      var(--shadow-glass-inset);
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* ── Light variant (slightly more visible) ── */
+  .glass-panel-light {
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.45) 0%,
+      rgba(255, 255, 255, 0.18) 50%,
+      rgba(255, 255, 255, 0.12) 100%
+    );
+    backdrop-filter: blur(30px) saturate(200%);
+    -webkit-backdrop-filter: blur(30px) saturate(200%);
+    border: 1px solid rgba(255, 255, 255, 0.55);
+    border-radius: 1.5rem;
+    box-shadow: 
+      var(--shadow-glass-neumorphic),
+      var(--shadow-glass-inset);
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* ── Glass Button (floating, neumorphic) ── */
+  .glass-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(
+      145deg,
+      rgba(255, 255, 255, 0.4) 0%,
+      rgba(255, 255, 255, 0.15) 100%
+    );
+    backdrop-filter: blur(16px) saturate(150%);
+    -webkit-backdrop-filter: blur(16px) saturate(150%);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    box-shadow: 
+      4px 4px 12px rgba(0, 0, 0, 0.06),
+      -2px -2px 8px rgba(255, 255, 255, 0.7),
+      inset 0 1px 1px rgba(255, 255, 255, 0.6);
+    border-radius: 1rem;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    font-weight: 500;
+    cursor: pointer;
+  }
+  .glass-button:hover {
+    background: linear-gradient(
+      145deg,
+      rgba(255, 255, 255, 0.55) 0%,
+      rgba(255, 255, 255, 0.25) 100%
+    );
+    box-shadow: 
+      6px 6px 20px rgba(0, 0, 0, 0.08),
+      -3px -3px 12px rgba(255, 255, 255, 0.9),
+      inset 0 1px 1px rgba(255, 255, 255, 0.7);
+    transform: translateY(-1px);
+  }
+  .glass-button:active {
+    transform: scale(0.97);
+  }
+
+  /* ── Primary Button (gradient glass with glow) ── */
+  .glass-button-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(
+      145deg,
+      rgba(129, 120, 240, 0.85) 0%,
+      rgba(99, 102, 241, 0.75) 50%,
+      rgba(139, 92, 246, 0.8) 100%
+    );
+    backdrop-filter: blur(16px) saturate(150%);
+    -webkit-backdrop-filter: blur(16px) saturate(150%);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 
+      0 8px 32px rgba(99, 102, 241, 0.3),
+      0 2px 8px rgba(99, 102, 241, 0.2),
+      inset 0 1px 1px rgba(255, 255, 255, 0.3);
+    border-radius: 1rem;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .glass-button-primary:hover {
+    box-shadow: 
+      0 12px 40px rgba(99, 102, 241, 0.4),
+      0 4px 16px rgba(99, 102, 241, 0.3),
+      inset 0 1px 1px rgba(255, 255, 255, 0.4);
+    transform: translateY(-2px);
+  }
+  .glass-button-primary:active {
+    transform: scale(0.97);
+  }
+  
+  /* ── Glass Input (inset, concave) ── */
+  .glass-input {
+    background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.2) 0%,
+      rgba(255, 255, 255, 0.35) 100%
+    );
+    backdrop-filter: blur(16px) saturate(150%);
+    -webkit-backdrop-filter: blur(16px) saturate(150%);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow: 
+      inset 2px 2px 6px rgba(0, 0, 0, 0.04),
+      inset -1px -1px 3px rgba(255, 255, 255, 0.5),
+      0 1px 3px rgba(255, 255, 255, 0.6);
+    border-radius: 1rem;
+    padding: 0.75rem 1rem;
+    outline: none;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    color: theme('colors.slate.800');
+    width: 100%;
+  }
+  .glass-input::placeholder {
+    color: theme('colors.slate.400');
+  }
+  .glass-input:focus {
+    border-color: rgba(99, 102, 241, 0.4);
+    box-shadow: 
+      inset 2px 2px 6px rgba(0, 0, 0, 0.04),
+      inset -1px -1px 3px rgba(255, 255, 255, 0.5),
+      0 0 0 3px rgba(99, 102, 241, 0.15),
+      0 1px 3px rgba(255, 255, 255, 0.6);
+    background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.28) 0%,
+      rgba(255, 255, 255, 0.42) 100%
+    );
+  }
+
+  /* ── Reflection overlay on glass panels ── */
+  .glass-reflection::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.5) 0%,
+      rgba(255, 255, 255, 0.15) 20%,
+      rgba(255, 255, 255, 0) 45%,
+      rgba(255, 255, 255, 0) 100%
+    );
+    z-index: 1;
+  }
+  
+  .glass-content {
+    @apply relative z-10;
+  }
+
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 via-purple-500 to-cyan-500;
+  }
+  
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}

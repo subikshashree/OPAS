@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OPAS - Student Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="assets/css/style.css">
+</head>
+
+<body>
+    <div class="sidebar">
+        <h3 class="text-center mb-4">OPAS</h3>
+        <a href="#" class="active"><i class="fas fa-home me-2"></i> Dashboard</a>
+        <a href="leave.html"><i class="fas fa-calendar-alt me-2"></i> Leave / OD</a>
+        <a href="#"><i class="fas fa-user-graduate me-2"></i> Academics</a>
+        <a href="#" onclick="logout()"><i class="fas fa-sign-out-alt me-2"></i> Logout</a>
+    </div>
+
+    <div class="main-content">
+        <h2 class="mb-4">Welcome, <span id="studentName">Student</span></h2>
+
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card dashboard-card bg-white p-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted mb-1">Attendance</p>
+                            <h3 class="mb-0" id="attendanceVal">--%</h3>
+                        </div>
+                        <div class="card-icon"><i class="fas fa-user-check"></i></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card dashboard-card bg-white p-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted mb-1">CGPA</p>
+                            <h3 class="mb-0" id="cgpaVal">--</h3>
+                        </div>
+                        <div class="card-icon"><i class="fas fa-graduation-cap"></i></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card dashboard-card bg-white p-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted mb-1">Company Participation</p>
+                            <h3 class="mb-0" id="companyVal">0</h3>
+                        </div>
+                        <div class="card-icon"><i class="fas fa-building"></i></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card dashboard-card bg-white p-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted mb-1">Leave Status</p>
+                            <h5 class="mb-0" id="leaveStatus">None</h5>
+                        </div>
+                        <div class="card-icon"><i class="fas fa-envelope-open-text"></i></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-white border-0">
+                        <h5 class="mb-0">Academic History</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Semester</th>
+                                        <th>SGPA</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="academicTable">
+                                    <tr>
+                                        <td colspan="3" class="text-center">Loading...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-white border-0">
+                        <h5 class="mb-0">Profile Details</h5>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>Reg No:</strong> <span id="regNo">--</span></p>
+                        <p><strong>Dept:</strong> <span id="dept">--</span></p>
+                        <p><strong>Mentor:</strong> <span id="mentor">--</span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="assets/js/app.js"></script>
+    <script>
+        checkAuth();
+        const user = getCurrentUser();
+
+        async function loadDashboard() {
+            // In a real app we'd need the student ID. 
+            // For MVP we assume user.id maps to student.id or we fetch profile first.
+            // Let's assume we fetch profile by user id then get dashboard.
+
+            try {
+                // First get student profile to get ID
+                /* 
+                // Since I implemented /api/student/profile/{userId}
+                const profile = await apiCall(`/student/profile/${user.id}`);
+                if(!profile) return;
+                
+                const data = await apiCall(`/student/dashboard/${profile.id}`);
+                */
+
+                // Mocking for UI dev before full backend integration or if data is missing
+                // In production, uncomment above and remove mock.
+
+                // For demonstration, let's try to fetch if backend is running, else fallback?
+                // No, I should write the code to assume backend works.
+
+                // Fetch student profile wrapper
+                const profileResponse = await fetch(`${API_URL}/student/profile/${user.id}`, {
+                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+                });
+
+                if (profileResponse.ok) {
+                    const student = await profileResponse.json();
+
+                    document.getElementById('studentName').innerText = user.username;
+                    document.getElementById('regNo').innerText = student.registerNumber;
+                    document.getElementById('dept').innerText = student.department;
+                    document.getElementById('mentor').innerText = student.mentor ? student.mentor.username : 'N/A';
+
+                    const dashboardResponse = await fetch(`${API_URL}/student/dashboard/${student.id}`, {
+                        headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+                    });
+
+                    if (dashboardResponse.ok) {
+                        const data = await dashboardResponse.json();
+                        document.getElementById('attendanceVal').innerText = data.attendancePercentage.toFixed(1) + '%';
+                        document.getElementById('cgpaVal').innerText = data.cgpa;
+                        document.getElementById('companyVal').innerText = data.companyParticipationCount;
+
+                        // Populate Table
+                        const tbody = document.getElementById('academicTable');
+                        tbody.innerHTML = '';
+                        if (data.academicHistory && data.academicHistory.length > 0) {
+                            data.academicHistory.forEach(rec => {
+                                const row = `<tr>
+                                    <td>${rec.semester}</td>
+                                    <td>${rec.sgpa}</td>
+                                    <td>${rec.resultStatus}</td>
+                                </tr>`;
+                                tbody.innerHTML += row;
+                            });
+                        } else {
+                            tbody.innerHTML = '<tr><td colspan="3" class="text-center">No records found</td></tr>';
+                        }
+                    }
+                } else {
+                    console.error("Failed to fetch profile");
+                    // alert("Could not fetch student profile. Ensure backend is running and data exists.");
+                }
+
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        loadDashboard();
+    </script>
+</body>
+
+</html>

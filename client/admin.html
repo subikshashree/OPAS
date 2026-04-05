@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OPAS - Admin Panel</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="assets/css/style.css">
+</head>
+
+<body>
+    <div class="sidebar">
+        <h3 class="text-center mb-4">OPAS Admin</h3>
+        <a href="#" class="active"><i class="fas fa-tachometer-alt me-2"></i> Dashboard</a>
+        <a href="#approvals"><i class="fas fa-check-circle me-2"></i> Approvals</a>
+        <a href="#attendance"><i class="fas fa-calendar-check me-2"></i> Attendance</a>
+        <a href="#" onclick="logout()"><i class="fas fa-sign-out-alt me-2"></i> Logout</a>
+    </div>
+
+    <div class="main-content">
+        <h2 class="mb-4">Admin Dashboard</h2>
+
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="card dashboard-card bg-white p-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted mb-1">Pending Requests</p>
+                            <h3 class="mb-0" id="pendingCount">0</h3>
+                        </div>
+                        <div class="card-icon"><i class="fas fa-hourglass-half"></i></div>
+                    </div>
+                </div>
+            </div>
+            <!-- Add more stats -->
+        </div>
+
+        <div class="card border-0 shadow-sm mb-4" id="approvals">
+            <div class="card-header bg-white border-0 d-flex justify-content-between">
+                <h5 class="mb-0">Pending Leave / OD Requests</h5>
+                <button class="btn btn-sm btn-outline-primary" onclick="loadPendingRequests()"><i
+                        class="fas fa-sync"></i> Refresh</button>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Student</th>
+                                <th>Type</th>
+                                <th>Date(s)</th>
+                                <th>Reason</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pendingTable">
+                            <!-- Pending items -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm" id="attendance">
+            <div class="card-header bg-white border-0">
+                <h5 class="mb-0">Mark Attendance</h5>
+            </div>
+            <div class="card-body">
+                <form id="attendanceForm" class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label">Student ID</label>
+                        <input type="number" class="form-control" id="targetStudentId" required placeholder="Enter ID">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Date</label>
+                        <input type="date" class="form-control" id="attDate" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Status</label>
+                        <select class="form-select" id="attStatus">
+                            <option value="PRESENT">Present</option>
+                            <option value="ABSENT">Absent</option>
+                            <option value="ON_DUTY">On Duty</option>
+                            <option value="LEAVE">Leave</option>
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-success">Mark Attendance</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="assets/js/app.js"></script>
+    <script>
+        checkAuth();
+        const user = getCurrentUser();
+        // Check role privileges if needed
+
+        async function loadPendingRequests() {
+            const data = await apiCall('/leave/pending');
+            const tbody = document.getElementById('pendingTable');
+            const countEl = document.getElementById('pendingCount');
+            tbody.innerHTML = '';
+
+            if (data && data.length > 0) {
+                countEl.innerText = data.length;
+                data.forEach(req => {
+                    const row = `<tr>
+                        <td>${req.student.registerNumber}</td>
+                        <td>${req.leaveType}</td>
+                        <td>${req.startDate}</td>
+                        <td>${req.reason}</td>
+                        <td>
+                            <button class="btn btn-sm btn-success me-2" onclick="approveRequest(${req.id}, 'APPROVED')">Approve</button>
+                            <button class="btn btn-sm btn-danger" onclick="approveRequest(${req.id}, 'REJECTED')">Reject</button>
+                        </td>
+                    </tr>`;
+                    tbody.innerHTML += row;
+                });
+            } else {
+                countEl.innerText = '0';
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center">No pending requests</td></tr>';
+            }
+        }
+
+        async function approveRequest(requestId, status) {
+            const comments = prompt("Enter comments (optional):", "");
+            const body = {
+                requestId: requestId,
+                approverId: user.id,
+                status: status,
+                comments: comments || ""
+            };
+
+            const res = await apiCall('/leave/approve', 'PUT', body);
+            if (res) {
+                alert(`Request ${status}`);
+                loadPendingRequests();
+            }
+        }
+
+        document.getElementById('attendanceForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const studentId = document.getElementById('targetStudentId').value;
+            const date = document.getElementById('attDate').value;
+            const status = document.getElementById('attStatus').value;
+
+            const body = {
+                studentId: studentId, // Ideally select from list
+                date: date,
+                status: status,
+                markedById: user.id
+            };
+
+            const res = await apiCall('/attendance/mark', 'POST', body);
+            if (res) {
+                alert("Attendance Marked Successfully");
+                document.getElementById('attendanceForm').reset();
+            }
+        });
+
+        loadPendingRequests();
+    </script>
+</body>
+
+</html>

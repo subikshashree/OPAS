@@ -1,0 +1,75 @@
+erDiagram
+    USER {
+        int id PK
+        string username
+        string password_hash
+        string email
+        enum role "STUDENT, FACULTY, PARENT, WARDEN, HOD, ADMIN"
+        boolean is_active
+        timestamp created_at
+    }
+
+    STUDENT {
+        int id PK
+        int user_id FK
+        string register_number
+        string department
+        string year
+        float cgpa
+        int total_attendance_days
+        int present_days
+    }
+
+    ATTENDANCE {
+        int id PK
+        int student_id FK
+        date date
+        enum status "PRESENT, ABSENT, ON_DUTY, LEAVE"
+        int marked_by_faculty_id FK
+    }
+
+    LEAVE_REQUEST {
+        int id PK
+        int student_id FK
+        date start_date
+        date end_date
+        string reason
+        enum leave_type "REGULAR, SICK, OD"
+        enum status "PENDING, APPROVED, REJECTED"
+        timestamp requested_at
+    }
+
+    APPROVAL {
+        int id PK
+        int request_id FK
+        enum request_type "LEAVE, OD"
+        int approver_id FK
+        enum status "APPROVED, REJECTED"
+        string comments
+        timestamp action_date
+    }
+
+    ACADEMIC_RECORD {
+        int id PK
+        int student_id FK
+        int semester
+        float sgpa
+        string result_status
+    }
+
+    COMPANY_PARTICIPATION {
+        int id PK
+        int student_id FK
+        string company_name
+        string event_type
+        date participation_date
+        string outcome
+    }
+
+    USER ||--o{ STUDENT : "is a"
+    USER ||--o{ APPROVAL : "approves"
+    STUDENT ||--o{ ATTENDANCE : "has"
+    STUDENT ||--o{ LEAVE_REQUEST : "requests"
+    STUDENT ||--o{ ACADEMIC_RECORD : "has"
+    STUDENT ||--o{ COMPANY_PARTICIPATION : "participates in"
+    LEAVE_REQUEST ||--o{ APPROVAL : "requires"

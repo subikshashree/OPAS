@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OPAS - Leave/OD Request</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="assets/css/style.css">
+</head>
+
+<body>
+    <div class="sidebar">
+        <h3 class="text-center mb-4">OPAS</h3>
+        <a href="dashboard.html"><i class="fas fa-home me-2"></i> Dashboard</a>
+        <a href="#" class="active"><i class="fas fa-calendar-alt me-2"></i> Leave / OD</a>
+        <a href="#"><i class="fas fa-user-graduate me-2"></i> Academics</a>
+        <a href="#" onclick="logout()"><i class="fas fa-sign-out-alt me-2"></i> Logout</a>
+    </div>
+
+    <div class="main-content">
+        <h2 class="mb-4">Leave / OD Management</h2>
+
+        <div class="row">
+            <div class="col-md-5">
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-white border-0">
+                        <h5 class="mb-0">New Request</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="leaveForm">
+                            <div class="mb-3">
+                                <label class="form-label">Request Type</label>
+                                <select class="form-select" id="leaveType" required>
+                                    <option value="REGULAR">Regular Leave</option>
+                                    <option value="SICK">Sick Leave</option>
+                                    <option value="OD">On-Duty (OD)</option>
+                                </select>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Start Date</label>
+                                    <input type="date" class="form-control" id="startDate" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">End Date</label>
+                                    <input type="date" class="form-control" id="endDate" required>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Reason</label>
+                                <textarea class="form-control" id="reason" rows="3" required></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100">Submit Request</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-7">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-white border-0">
+                        <h5 class="mb-0">Request History</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Type</th>
+                                        <th>Date(s)</th>
+                                        <th>Status</th>
+                                        <th>Applied On</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="historyTable">
+                                    <!-- History items -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="assets/js/app.js"></script>
+    <script>
+        checkAuth();
+        const user = getCurrentUser();
+        let studentId = null;
+
+        async function init() {
+            // Get Student ID first
+            const profileResponse = await fetch(`${API_URL}/student/profile/${user.id}`, {
+                headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+            });
+            if (profileResponse.ok) {
+                const student = await profileResponse.json();
+                studentId = student.id;
+                loadHistory();
+            }
+        }
+
+        async function loadHistory() {
+            if (!studentId) return;
+            const data = await apiCall(`/leave/student/${studentId}`);
+            const tbody = document.getElementById('historyTable');
+            tbody.innerHTML = '';
+            if (data && data.length > 0) {
+                data.forEach(req => {
+                    let badgeClass = 'bg-secondary';
+                    if (req.status === 'APPROVED') badgeClass = 'bg-success';
+                    if (req.status === 'REJECTED') badgeClass = 'bg-danger';
+                    if (req.status === 'PENDING') badgeClass = 'bg-warning text-dark';
+
+                    const row = `<tr>
+                        <td>${req.leaveType}</td>
+                        <td>${req.startDate} to ${req.endDate}</td>
+                        <td><span class="badge ${badgeClass}">${req.status}</span></td>
+                        <td>${new Date(req.requestedAt).toLocaleDateString()}</td>
+                    </tr>`;
+                    tbody.innerHTML += row;
+                });
+            } else {
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center">No history found</td></tr>';
+            }
+        }
+
+        document.getElementById('leaveForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!studentId) return alert("Student profile not loaded");
+
+            const leaveType = document.getElementById('leaveType').value;
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            const reason = document.getElementById('reason').value;
+
+            const body = {
+                studentId,
+                startDate,
+                endDate,
+                reason,
+                leaveType
+            };
+
+            const res = await apiCall('/leave/apply', 'POST', body);
+            if (res) {
+                alert("Request submitted successfully!");
+                document.getElementById('leaveForm').reset();
+                loadHistory();
+            } else {
+                alert("Failed to submit request");
+            }
+        });
+
+        init();
+    </script>
+</body>
+
+</html>
