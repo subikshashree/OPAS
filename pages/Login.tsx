@@ -178,11 +178,11 @@ const Login: React.FC = () => {
               <label className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-2">System Identity</label>
               <GlassInput
                 type="text"
-                placeholder="e.g. parent, hod, warden..."
+                placeholder="e.g. 664893 (Numbers Only)"
                 icon={<span>👤</span>}
                 required
                 value={userId}
-                onChange={(e) => setUserId(e.target.value)}
+                onChange={(e) => setUserId(e.target.value.replace(/[^0-9]/g, ''))}
               />
             </div>
 
