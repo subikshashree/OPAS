@@ -1,17 +1,11 @@
 package com.opas.model;
 
 import jakarta.persistence.*;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "leave_requests")
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class LeaveRequest {
 
     @Id
@@ -46,5 +40,83 @@ public class LeaveRequest {
         if (status == null) {
             status = RequestStatus.PENDING;
         }
+    }
+
+
+    public LeaveRequest() {}
+
+    public LeaveRequest(Long id, Student student, LocalDate startDate, LocalDate endDate, String reason, LeaveType leaveType, RequestStatus status, LocalDateTime requestedAt) {
+        this.id = id;
+        this.student = student;
+        this.startDate = startDate;
+        this.endDate = endDate;
+        this.reason = reason;
+        this.leaveType = leaveType;
+        this.status = status;
+        this.requestedAt = requestedAt;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public Student getStudent() {
+        return student;
+    }
+
+    public void setStudent(Student student) {
+        this.student = student;
+    }
+
+    public LocalDate getStartDate() {
+        return startDate;
+    }
+
+    public void setStartDate(LocalDate startDate) {
+        this.startDate = startDate;
+    }
+
+    public LocalDate getEndDate() {
+        return endDate;
+    }
+
+    public void setEndDate(LocalDate endDate) {
+        this.endDate = endDate;
+    }
+
+    public String getReason() {
+        return reason;
+    }
+
+    public void setReason(String reason) {
+        this.reason = reason;
+    }
+
+    public LeaveType getLeaveType() {
+        return leaveType;
+    }
+
+    public void setLeaveType(LeaveType leaveType) {
+        this.leaveType = leaveType;
+    }
+
+    public RequestStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(RequestStatus status) {
+        this.status = status;
+    }
+
+    public LocalDateTime getRequestedAt() {
+        return requestedAt;
+    }
+
+    public void setRequestedAt(LocalDateTime requestedAt) {
+        this.requestedAt = requestedAt;
     }
 }

@@ -1,0 +1,174 @@
+package com.opas.controller;
+
+import com.opas.model.User;
+import com.opas.model.Role;
+import com.opas.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.*;
+
+/**
+ * Open API Controller for OPAS React Frontend Integration.
+ * These endpoints are whitelisted in SecurityConfig so the React
+ * frontend can call them without JWT authentication.
+ */
+@CrossOrigin(origins = "*", maxAge = 3600)
+@RestController
+@RequestMapping("/api/opas")
+public class OpasApiController {
+
+    @Autowired
+    UserRepository userRepository;
+
+    // ── LOGIN / REGISTER via Email ──────────────────────────────────
+    /**
+     * POST /api/opas/auth/login
+     * Body: { "email": "...", "name": "...", "avatar": "..." }
+     * 
+     * If user with this email exists → return their full record.
+     * If not → auto-register them as STUDENT and return.
+     */
+    @PostMapping("/auth/login")
+    public ResponseEntity<Map<String, Object>> loginOrRegister(@RequestBody Map<String, String> body) {
+        String email = body.getOrDefault("email", "").trim().toLowerCase();
+        String nameHint = body.getOrDefault("name", "");
+        String avatarHint = body.getOrDefault("avatar", "");
+
+        if (email.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Email is required"));
+        }
+
+        Optional<User> existingUser = userRepository.findByEmail(email);
+
+        if (existingUser.isPresent()) {
+            return ResponseEntity.ok(userToMap(existingUser.get()));
+        }
+
+        // Auto-register as new STUDENT
+        User newUser = new User();
+        String numericId = String.valueOf(100000 + new Random().nextInt(900000));
+        newUser.setId(null); // Let DB auto-generate the Long id
+        newUser.setUsername(email); // Use email as username
+        newUser.setEmail(email);
+        newUser.setPassword("$2a$10$dummy"); // BCrypt placeholder (not used for Google auth)
+        newUser.setRole(Role.STUDENT);
+        newUser.setName(nameHint.isEmpty() ? email.split("@")[0] : nameHint);
+        newUser.setAvatar(avatarHint.isEmpty()
+            ? "https://ui-avatars.com/api/?name=" + nameHint + "&background=random"
+            : avatarHint);
+        newUser.setDepartment("Computer Science");
+        newUser.setStatus("ACTIVE");
+        newUser.setStudentId(numericId);
+
+        User saved = userRepository.save(newUser);
+        return ResponseEntity.ok(userToMap(saved));
+    }
+
+    // ── GET ALL USERS (for Admin Directory) ─────────────────────────
+    @GetMapping("/users")
+    public ResponseEntity<List<Map<String, Object>>> getAllUsers() {
+        List<User> all = userRepository.findAll();
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (User u : all) {
+            result.add(userToMap(u));
+        }
+        return ResponseEntity.ok(result);
+    }
+
+    // ── GET USER BY ID ──────────────────────────────────────────────
+    @GetMapping("/users/{id}")
+    public ResponseEntity<Map<String, Object>> getUserById(@PathVariable Long id) {
+        Optional<User> user = userRepository.findById(id);
+        if (user.isPresent()) {
+            return ResponseEntity.ok(userToMap(user.get()));
+        }
+        return ResponseEntity.notFound().build();
+    }
+
+    // ── GET USER BY EMAIL ───────────────────────────────────────────
+    @GetMapping("/users/email/{email}")
+    public ResponseEntity<Map<String, Object>> getUserByEmail(@PathVariable String email) {
+        Optional<User> user = userRepository.findByEmail(email.trim().toLowerCase());
+        if (user.isPresent()) {
+            return ResponseEntity.ok(userToMap(user.get()));
+        }
+        return ResponseEntity.notFound().build();
+    }
+
+    // ── UPDATE USER (Admin role changes, relationship assignment) ───
+    @PutMapping("/users/{id}")
+    public ResponseEntity<Map<String, Object>> updateUser(
+            @PathVariable Long id,
+            @RequestBody Map<String, Object> body) {
+        Optional<User> opt = userRepository.findById(id);
+        if (opt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        User user = opt.get();
+
+        // Update fields that are present in the body
+        if (body.containsKey("name")) user.setName((String) body.get("name"));
+        if (body.containsKey("role")) user.setRole(Role.valueOf((String) body.get("role")));
+        if (body.containsKey("department")) user.setDepartment((String) body.get("department"));
+        if (body.containsKey("phone")) user.setPhone((String) body.get("phone"));
+        if (body.containsKey("avatar")) user.setAvatar((String) body.get("avatar"));
+        if (body.containsKey("status")) user.setStatus((String) body.get("status"));
+        if (body.containsKey("mentorId")) user.setMentorId((String) body.get("mentorId"));
+        if (body.containsKey("parentId")) user.setParentId((String) body.get("parentId"));
+        if (body.containsKey("wardenId")) user.setWardenId((String) body.get("wardenId"));
+        if (body.containsKey("wardId")) user.setWardId((String) body.get("wardId"));
+        if (body.containsKey("menteeIds")) user.setMenteeIds((String) body.get("menteeIds"));
+        if (body.containsKey("isHosteler")) user.setIsHosteler((Boolean) body.get("isHosteler"));
+        if (body.containsKey("residentialType")) user.setResidentialType((String) body.get("residentialType"));
+        if (body.containsKey("roomNumber")) user.setRoomNumber((String) body.get("roomNumber"));
+        if (body.containsKey("hostelBlock")) user.setHostelBlock((String) body.get("hostelBlock"));
+        if (body.containsKey("busNumber")) user.setBusNumber((String) body.get("busNumber"));
+        if (body.containsKey("hostelName")) user.setHostelName((String) body.get("hostelName"));
+
+        User saved = userRepository.save(user);
+        return ResponseEntity.ok(userToMap(saved));
+    }
+
+    // ── HELPER: Convert JPA User entity to a flat Map matching React frontend schema ──
+    private Map<String, Object> userToMap(User user) {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("id", String.valueOf(user.getId()));
+        m.put("name", user.getName() != null ? user.getName() : user.getUsername());
+        m.put("email", user.getEmail());
+        
+        // Map the single Role enum to the frontend's roles[] array
+        String roleName = user.getRole() != null ? user.getRole().name() : "STUDENT";
+        // Frontend uses FACULTY for both FACULTY and MENTOR
+        if (roleName.equals("MENTOR")) roleName = "FACULTY";
+        m.put("roles", List.of(roleName));
+        
+        m.put("avatar", user.getAvatar());
+        m.put("permissions", List.of()); // Permissions are computed on frontend
+        m.put("status", user.getStatus() != null ? user.getStatus() : "ACTIVE");
+        m.put("phone", user.getPhone());
+        m.put("studentId", user.getStudentId());
+        m.put("isHosteler", user.isIsHosteler());
+        m.put("residentialType", user.getResidentialType());
+        m.put("roomNumber", user.getRoomNumber());
+        m.put("hostelBlock", user.getHostelBlock());
+        m.put("busNumber", user.getBusNumber());
+        m.put("department", user.getDepartment());
+        m.put("mentorId", user.getMentorId());
+        m.put("parentId", user.getParentId());
+        m.put("wardenId", user.getWardenId());
+        m.put("wardId", user.getWardId());
+        m.put("hostelName", user.getHostelName());
+        
+        // menteeIds stored as comma-separated string; convert to array
+        String menteeIdsStr = user.getMenteeIds();
+        if (menteeIdsStr != null && !menteeIdsStr.isEmpty()) {
+            m.put("menteeIds", Arrays.asList(menteeIdsStr.split(",")));
+        } else {
+            m.put("menteeIds", List.of());
+        }
+        
+        return m;
+    }
+}

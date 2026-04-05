@@ -1,16 +1,10 @@
 package com.opas.model;
 
 import jakarta.persistence.*;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "approvals")
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class Approval {
 
     @Id
@@ -40,5 +34,74 @@ public class Approval {
     @PrePersist
     protected void onAction() {
         actionDate = LocalDateTime.now();
+    }
+
+
+    public Approval() {}
+
+    public Approval(Long id, LeaveRequest request, RequestType requestType, User approver, RequestStatus status, String comments, LocalDateTime actionDate) {
+        this.id = id;
+        this.request = request;
+        this.requestType = requestType;
+        this.approver = approver;
+        this.status = status;
+        this.comments = comments;
+        this.actionDate = actionDate;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public LeaveRequest getRequest() {
+        return request;
+    }
+
+    public void setRequest(LeaveRequest request) {
+        this.request = request;
+    }
+
+    public RequestType getRequestType() {
+        return requestType;
+    }
+
+    public void setRequestType(RequestType requestType) {
+        this.requestType = requestType;
+    }
+
+    public User getApprover() {
+        return approver;
+    }
+
+    public void setApprover(User approver) {
+        this.approver = approver;
+    }
+
+    public RequestStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(RequestStatus status) {
+        this.status = status;
+    }
+
+    public String getComments() {
+        return comments;
+    }
+
+    public void setComments(String comments) {
+        this.comments = comments;
+    }
+
+    public LocalDateTime getActionDate() {
+        return actionDate;
+    }
+
+    public void setActionDate(LocalDateTime actionDate) {
+        this.actionDate = actionDate;
     }
 }

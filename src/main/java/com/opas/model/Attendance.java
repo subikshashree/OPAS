@@ -1,16 +1,10 @@
 package com.opas.model;
 
 import jakarta.persistence.*;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
 import java.time.LocalDate;
 
 @Entity
 @Table(name = "attendance")
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class Attendance {
 
     @Id
@@ -31,4 +25,55 @@ public class Attendance {
     @ManyToOne
     @JoinColumn(name = "marked_by_faculty_id")
     private User markedBy;
+
+
+    public Attendance() {}
+
+    public Attendance(Long id, Student student, LocalDate date, AttendanceStatus status, User markedBy) {
+        this.id = id;
+        this.student = student;
+        this.date = date;
+        this.status = status;
+        this.markedBy = markedBy;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public Student getStudent() {
+        return student;
+    }
+
+    public void setStudent(Student student) {
+        this.student = student;
+    }
+
+    public LocalDate getDate() {
+        return date;
+    }
+
+    public void setDate(LocalDate date) {
+        this.date = date;
+    }
+
+    public AttendanceStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(AttendanceStatus status) {
+        this.status = status;
+    }
+
+    public User getMarkedBy() {
+        return markedBy;
+    }
+
+    public void setMarkedBy(User markedBy) {
+        this.markedBy = markedBy;
+    }
 }
