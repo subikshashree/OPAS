@@ -63,8 +63,30 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
              <span className="text-slate-800 font-bold text-xl tracking-tight hidden sm:block">OPAS</span>
           </div>
 
-          {/* Hidden Duplicate Navigation */}
-          <div className="hidden md:flex items-center gap-1 p-1" />
+          {/* Conditional Navigation Links */}
+          {!['PARENT', 'HOD', 'WARDEN', 'FACULTY'].includes(primaryRole) ? (
+            <div className="hidden md:flex items-center gap-1 p-1 bg-white/15 rounded-2xl border border-white/25 backdrop-blur-md">
+              {currentNav.map((item) => {
+                const isActive = location.pathname === item.path;
+                return (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 flex items-center gap-2 ${
+                      isActive
+                        ? "bg-white/60 shadow-sm text-indigo-700"
+                        : "text-slate-600 hover:text-slate-900 hover:bg-white/40"
+                    }`}
+                  >
+                    <span>{item.icon}</span>
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="hidden md:flex items-center gap-1 p-1" />
+          )}
 
           {/* Right Actions */}
           <div className="flex items-center gap-4">
