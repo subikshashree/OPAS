@@ -1,15 +1,24 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../App';
-import { UserRole } from '../../types';
+import { UserRole, LeaveRequest } from '../../types';
 import { MOCK_ACADEMIC_DATA, MOCK_ATTENDANCE, MOCK_PLACEMENT, MOCK_TASKS, MOCK_USERS_LIST } from '../../constants';
 import { GlassCard, GlassButton, GlassBadge, FloatingSphere } from '../../components/ui';
 import { getWorkflowSteps } from '../../hooks/useLeaveWorkflow';
 
 const StudentDashboard: React.FC = () => {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<'info' | 'attendance' | 'placement' | 'tasks' | 'leave'>('info');
+  const location = useLocation();
+  const [activeTab, setActiveTab] = useState<'info' | 'attendance' | 'placement' | 'tasks' | 'leave'>(
+    location.state?.targetTab || 'info'
+  );
   const [showAttendanceDetail, setShowAttendanceDetail] = useState(false);
+  const [myLeaves, setMyLeaves] = useState<LeaveRequest[]>([]);
+
+  useEffect(() => {
+    const saved = JSON.parse(localStorage.getItem('opas_my_leaves') || '[]');
+    setMyLeaves(saved);
+  }, []);
 
   if (!user) return null;
 
@@ -255,7 +264,7 @@ const StudentDashboard: React.FC = () => {
       {activeTab === 'leave' && (
         <div className="space-y-6">
           <GlassCard variant="light" className="p-8">
-            <h2 className="text-xl font-bold text-slate-800 mb-6">Leave Approval Workflows</h2>
+            <h2 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2"><span className="text-2xl">⚙️</span> Approval Workflows</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {(['SICK', 'SPECIAL_PERMISSION', 'OD'] as const).map(type => {
                 const steps = getWorkflowSteps(type, user.isHosteler || false);
@@ -279,8 +288,51 @@ const StudentDashboard: React.FC = () => {
             </div>
           </GlassCard>
 
-          <div className="flex gap-4">
-            <Link to="/leave" className="flex-1"><GlassButton variant="primary" className="w-full">New Leave Request</GlassButton></Link>
+          <GlassCard variant="light" className="p-0 overflow-hidden">
+            <div className="p-6 border-b border-white/40 flex items-center justify-between bg-white/10">
+              <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2"><span className="text-2xl">📜</span> My Leave History</h2>
+            </div>
+            
+            <div className="p-4 md:p-6">
+              {myLeaves.length === 0 ? (
+                <div className="text-center py-10 bg-white/20 rounded-2xl border border-dashed border-slate-300">
+                  <p className="text-4xl mb-4">📭</p>
+                  <p className="text-slate-500 font-semibold">No leave applications found.</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {myLeaves.map((leave, i) => (
+                    <div key={i} className="p-5 bg-white/40 rounded-2xl border border-white/50 hover:bg-white/60 transition-colors shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+                      
+                      <div className="space-y-2 flex-1">
+                        <div className="flex items-center gap-3">
+                          <GlassBadge variant={leave.type === 'OD' ? 'info' : leave.type === 'SICK' ? 'danger' : 'warning'}>
+                            {leave.type.replace('_', ' ')}
+                          </GlassBadge>
+                          <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">{new Date(leave.appliedAt).toLocaleDateString()}</span>
+                        </div>
+                        <p className="text-sm text-slate-700 font-medium">{leave.reason}</p>
+                        <p className="text-xs font-semibold text-indigo-600 bg-indigo-50/50 inline-block px-2 py-1 rounded-md border border-indigo-100">
+                          {leave.startDate} to {leave.endDate}
+                        </p>
+                      </div>
+
+                      <div className="flex flex-col items-end justify-center min-w-[120px]">
+                        <GlassBadge variant={leave.status === 'PENDING' ? 'warning' : leave.status === 'APPROVED' ? 'success' : 'danger'} className="text-sm px-4 py-1.5 shadow-sm">
+                          {leave.status === 'PENDING' ? '⏳ PENDING' : leave.status}
+                        </GlassBadge>
+                        <span className="text-[9px] text-slate-400 font-bold mt-2 uppercase tracking-wider">Current Status</span>
+                      </div>
+
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </GlassCard>
+
+          <div className="flex gap-4 pt-2">
+            <Link to="/leave" className="flex-1"><GlassButton variant="primary" size="lg" className="w-full shadow-lg shadow-indigo-500/20">New Leave Request</GlassButton></Link>
           </div>
         </div>
       )}

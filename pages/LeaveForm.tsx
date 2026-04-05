@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../App';
 import { UserRole, LeaveType } from '../types';
 import { GlassCard, GlassButton, GlassInput, GlassBadge } from '../components/ui';
@@ -6,6 +7,7 @@ import { getWorkflowSteps } from '../hooks/useLeaveWorkflow';
 
 const LeaveForm: React.FC = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     type: 'SICK' as LeaveType,
     startDate: '',
@@ -26,7 +28,28 @@ const LeaveForm: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    alert(`${formData.type.replace('_', ' ')} request submitted successfully!\nWorkflow: ${workflowSteps.map(s => s.label).join(' → ')}`);
+    
+    // Build the new LeaveRequest object
+    const newLeave = {
+      id: 'req_' + Math.floor(Math.random() * 1000000),
+      studentId: user.studentId || user.id,
+      studentName: user.name,
+      startDate: formData.startDate,
+      endDate: formData.endDate,
+      type: formData.type,
+      reason: formData.reason,
+      status: 'PENDING',
+      approvals: [],
+      appliedAt: new Date().toISOString()
+    };
+
+    // Save to localStorage so it persists on the frontend
+    const existingLeaves = JSON.parse(localStorage.getItem('opas_my_leaves') || '[]');
+    localStorage.setItem('opas_my_leaves', JSON.stringify([newLeave, ...existingLeaves]));
+
+    // Navigate back to the dashboard leave portal tab
+    // We pass a state flag so the Dashboard knows to open the Leave tab
+    navigate('/', { state: { targetTab: 'leave' } });
   };
 
   return (
