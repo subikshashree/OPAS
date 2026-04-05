@@ -136,9 +136,35 @@ const UserManagement: React.FC = () => {
             <tbody className="divide-y divide-white/40">
               {users.map(user => {
                 const currentPrimaryRole = user.roles[0];
+                
+                // Helper to resolve a name by ID
+                const resolveName = (id?: string) => {
+                  if (!id) return '';
+                  const found = users.find(u => u.id === id);
+                  return found ? found.name : id;
+                };
+
                 return (
                   <tr key={user.id} className="hover:bg-white/30 transition-colors">
-                    <td className="px-6 py-4 font-bold text-slate-800">{user.name}</td>
+                    <td className="px-6 py-4">
+                      <div className="font-bold text-slate-800">{user.name}</div>
+                      {currentPrimaryRole === UserRole.PARENT && user.wardId && (
+                        <div className="text-[10px] text-emerald-600 font-bold mt-0.5 tracking-wide">
+                          ↳ Guardian of: {resolveName(user.wardId)}
+                        </div>
+                      )}
+                      {currentPrimaryRole === UserRole.STUDENT && (user.mentorId || user.parentId) && (
+                        <div className="text-[10px] text-indigo-500 font-bold mt-0.5 tracking-wide">
+                          {user.mentorId && <span>↳ Mentor: {resolveName(user.mentorId)} </span>}
+                          {user.parentId && <span className="ml-1">↳ Parent: {resolveName(user.parentId)}</span>}
+                        </div>
+                      )}
+                      {currentPrimaryRole === UserRole.FACULTY && user.menteeIds && user.menteeIds.length > 0 && (
+                        <div className="text-[10px] text-purple-600 font-bold mt-0.5 tracking-wide">
+                          ↳ Mentoring {user.menteeIds.length} Student(s)
+                        </div>
+                      )}
+                    </td>
                     <td className="px-6 py-4">
                       <span className="bg-slate-100 text-slate-600 font-mono text-xs px-2 py-1 rounded-md border border-slate-200">{user.id}</span>
                     </td>
