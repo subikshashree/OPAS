@@ -1,12 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../App';
-import { UserRole } from '../../types';
-import { MOCK_USERS_LIST, MOCK_ATTENDANCE, MOCK_PLACEMENT, MOCK_LEAVE_REQUESTS } from '../../constants';
+import { UserRole, LeaveRequest } from '../../types';
+import { MOCK_USERS_LIST, MOCK_ATTENDANCE, MOCK_PLACEMENT } from '../../constants';
 import { GlassCard, GlassButton, GlassBadge, FloatingSphere } from '../../components/ui';
 
 const ParentDashboard: React.FC = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'ward' | 'attendance' | 'placement' | 'leaves' | 'interact'>('ward');
+  const [allLeaves, setAllLeaves] = useState<LeaveRequest[]>([]);
+
+  useEffect(() => {
+    const saved = JSON.parse(localStorage.getItem('opas_my_leaves') || '[]');
+    setAllLeaves(saved);
+  }, []);
 
   if (!user) return null;
 
@@ -14,7 +20,7 @@ const ParentDashboard: React.FC = () => {
   const mentor = ward ? MOCK_USERS_LIST.find(u => u.id === ward.mentorId) : null;
   const attendance = ward ? (MOCK_ATTENDANCE[ward.id] || []) : [];
   const placement = ward ? MOCK_PLACEMENT[ward.id] : null;
-  const leaveQueue = MOCK_LEAVE_REQUESTS.filter(lr => lr.status === 'PENDING_PARENT' && lr.studentId === user.wardId);
+  const leaveQueue = allLeaves.filter(lr => lr.status === 'PENDING_PARENT' && lr.studentName === ward?.name);
 
   const totalDays = attendance.length;
   const presentDays = attendance.filter(a => a.status === 'PRESENT').length;
@@ -27,6 +33,21 @@ const ParentDashboard: React.FC = () => {
     { id: 'leaves' as const, label: 'Leave Auth', icon: '⏳' },
     { id: 'interact' as const, label: 'Mentor Chat', icon: '💬' },
   ];
+
+  const handleAction = (id: string, approved: boolean) => {
+    const updated = allLeaves.map(lr => {
+      if (lr.id === id) {
+        return {
+          ...lr,
+          status: approved ? (ward?.isHosteler ? 'PENDING_WARDEN' : 'PENDING_MENTOR') : 'REJECTED'
+        };
+      }
+      return lr;
+    });
+    setAllLeaves(updated);
+    localStorage.setItem('opas_my_leaves', JSON.stringify(updated));
+    alert(approved ? 'Leave application authorized successfully!' : 'Leave application rejected!');
+  };
 
   return (
     <div className="space-y-8 relative animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -178,8 +199,8 @@ const ParentDashboard: React.FC = () => {
                 <p className="text-xs text-slate-500">📅 {lr.startDate} to {lr.endDate}</p>
               </div>
               <div className="flex gap-3">
-                <GlassButton variant="ghost" className="text-rose-600 hover:bg-rose-50 border border-rose-200">Deny</GlassButton>
-                <GlassButton variant="primary" className="bg-gradient-to-r from-emerald-500 to-emerald-600 border-none">Authorize</GlassButton>
+                <GlassButton variant="ghost" onClick={() => handleAction(lr.id, false)} className="text-rose-600 hover:bg-rose-50 border border-rose-200">Deny</GlassButton>
+                <GlassButton variant="primary" onClick={() => handleAction(lr.id, true)} className="bg-gradient-to-r from-emerald-500 to-emerald-600 border-none">Authorize</GlassButton>
               </div>
             </GlassCard>
           ))}
@@ -198,7 +219,10 @@ const ParentDashboard: React.FC = () => {
                 <img src={mentor.avatar} className="w-16 h-16 rounded-2xl border-2 border-white shadow-md object-cover mx-auto mb-4" alt="" />
                 <h3 className="font-bold text-lg text-slate-800">{mentor.name}</h3>
                 <p className="text-sm text-slate-500 mb-4">{mentor.email} • {mentor.phone}</p>
-                <GlassButton variant="primary" className="mx-auto">Send Message</GlassButton>
+                <GlassButton variant="primary" className="mx-auto" onClick={() => {
+                  const msg = prompt(`Enter your message for ${mentor.name}:`);
+                  if (msg) alert('Message transmitted successfully! The mentor will respond shortly.');
+                }}>Send Message</GlassButton>
               </>
             ) : (
               <p className="text-slate-400">No mentor assigned to your ward.</p>

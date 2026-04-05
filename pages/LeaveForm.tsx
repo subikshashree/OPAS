@@ -15,6 +15,8 @@ const LeaveForm: React.FC = () => {
     reason: '',
   });
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   if (!user?.roles.includes(UserRole.STUDENT)) {
     return (
       <div className="p-8 text-center text-rose-500 font-bold bg-rose-50 rounded-3xl">
@@ -28,6 +30,11 @@ const LeaveForm: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    
+    // Calculate accurate first step status
+    const initialStatus = workflowSteps.length > 0 ? workflowSteps[0].statusKey : 'APPROVED';
     
     // Build the new LeaveRequest object
     const newLeave = {
@@ -38,7 +45,7 @@ const LeaveForm: React.FC = () => {
       endDate: formData.endDate,
       type: formData.type,
       reason: formData.reason,
-      status: 'PENDING',
+      status: initialStatus,
       approvals: [],
       appliedAt: new Date().toISOString()
     };
@@ -141,9 +148,9 @@ const LeaveForm: React.FC = () => {
             variant="primary"
             size="lg"
             className="w-full mt-4"
-            disabled={formData.type === 'SICK' && !isHosteler}
+            disabled={isSubmitting || (formData.type === 'SICK' && !isHosteler)}
           >
-            Submit Application
+            {isSubmitting ? 'Submitting...' : 'Submit Application'}
           </GlassButton>
         </form>
       </GlassCard>

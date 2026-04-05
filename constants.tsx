@@ -139,12 +139,12 @@ export const MOCK_ATTENDANCE: Record<string, AttendanceRecord[]> = {
 
 // ─── Tasks ──────────────────────────────────────────────────────────
 export const MOCK_TASKS: Task[] = [
-  { id: 't1', title: 'DSA Assignment - Graphs', description: 'Solve 10 problems on BFS/DFS', assignedBy: 'f1', assignedByName: 'Dr. Sarah Smith', assignedTo: 's1', deadline: '2024-11-01', status: 'PENDING' },
-  { id: 't2', title: 'DBMS Mini Project', description: 'Design ER diagram for Hospital DB', assignedBy: 'f1', assignedByName: 'Dr. Sarah Smith', assignedTo: 's1', deadline: '2024-10-28', status: 'COMPLETED', submittedAt: '2024-10-26' },
-  { id: 't3', title: 'OS Lab Record', description: 'Complete lab records up to Exp 8', assignedBy: 'f1', assignedByName: 'Dr. Sarah Smith', assignedTo: 's1', deadline: '2024-10-20', status: 'OVERDUE' },
-  { id: 't4', title: 'Research Paper Review', description: 'Review IEEE paper on ML algorithms', assignedBy: 'f1', assignedByName: 'Dr. Sarah Smith', assignedTo: 's2', deadline: '2024-11-05', status: 'PENDING' },
-  { id: 't5', title: 'Seminar Presentation', description: 'Prepare PPT on Cloud Computing', assignedBy: 'f1', assignedByName: 'Dr. Sarah Smith', assignedTo: 's3', deadline: '2024-11-10', status: 'PENDING' },
-  { id: 't6', title: 'Coding Contest Prep', description: 'Solve 20 leetcode problems', assignedBy: 'f1', assignedByName: 'Dr. Sarah Smith', assignedTo: 's4', deadline: '2024-10-30', status: 'COMPLETED', submittedAt: '2024-10-29' },
+  { id: 't1', title: 'DSA Assignment - Graphs', description: 'Solve 10 problems on BFS/DFS', assignedBy: 'f1', assignedByName: 'Dr. Sarah Smith', assignedTo: 's1', deadline: '2026-11-01', status: 'PENDING' },
+  { id: 't2', title: 'DBMS Mini Project', description: 'Design ER diagram for Hospital DB', assignedBy: 'f1', assignedByName: 'Dr. Sarah Smith', assignedTo: 's1', deadline: '2026-10-28', status: 'COMPLETED', submittedAt: '2026-10-26' },
+  { id: 't3', title: 'OS Lab Record', description: 'Complete lab records up to Exp 8', assignedBy: 'f1', assignedByName: 'Dr. Sarah Smith', assignedTo: 's1', deadline: '2026-04-01', status: 'OVERDUE' },
+  { id: 't4', title: 'Research Paper Review', description: 'Review IEEE paper on ML algorithms', assignedBy: 'f1', assignedByName: 'Dr. Sarah Smith', assignedTo: 's2', deadline: '2026-11-05', status: 'PENDING' },
+  { id: 't5', title: 'Seminar Presentation', description: 'Prepare PPT on Cloud Computing', assignedBy: 'f1', assignedByName: 'Dr. Sarah Smith', assignedTo: 's3', deadline: '2026-11-10', status: 'PENDING' },
+  { id: 't6', title: 'Coding Contest Prep', description: 'Solve 20 leetcode problems', assignedBy: 'f1', assignedByName: 'Dr. Sarah Smith', assignedTo: 's4', deadline: '2026-10-30', status: 'COMPLETED', submittedAt: '2026-10-29' },
 ];
 
 // ─── Placement Data ─────────────────────────────────────────────────
@@ -152,15 +152,15 @@ export const MOCK_PLACEMENT: Record<string, { companiesAttended: number; placedC
   s1: {
     companiesAttended: 5,
     upcomingCompanies: [
-      { name: 'Google', date: '2024-11-15', role: 'SDE Intern' },
-      { name: 'Microsoft', date: '2024-11-20', role: 'SWE Intern' },
-      { name: 'Amazon', date: '2024-12-01', role: 'SDE-1' },
+      { name: 'Google', date: '2026-11-15', role: 'SDE Intern' },
+      { name: 'Microsoft', date: '2026-11-20', role: 'SWE Intern' },
+      { name: 'Amazon', date: '2026-12-01', role: 'SDE-1' },
     ],
     improvementAreas: ['System Design', 'SQL Optimization', 'Communication Skills'],
   },
   s2: {
     companiesAttended: 3, placedCompany: 'Infosys',
-    upcomingCompanies: [{ name: 'TCS', date: '2024-11-18', role: 'Developer' }],
+    upcomingCompanies: [{ name: 'TCS', date: '2026-11-18', role: 'Developer' }],
     improvementAreas: ['DSA Practice', 'Problem Solving Speed'],
   },
   s3: {

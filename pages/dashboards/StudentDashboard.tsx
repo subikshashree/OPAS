@@ -24,7 +24,11 @@ const StudentDashboard: React.FC = () => {
 
   const studentId = user.id;
   const attendance = MOCK_ATTENDANCE[studentId] || [];
-  const tasks = MOCK_TASKS.filter(t => t.assignedTo === studentId);
+  
+  // Use local state for tasks so we can click 'Submit' and see it change
+  const initialTasks = MOCK_TASKS.filter(t => t.assignedTo === studentId);
+  const [localTasks, setLocalTasks] = useState(initialTasks);
+  
   const placement = MOCK_PLACEMENT[studentId];
   const mentor = MOCK_USERS_LIST.find(u => u.id === user.mentorId);
   const parent = MOCK_USERS_LIST.find(u => u.id === user.parentId);
@@ -34,9 +38,14 @@ const StudentDashboard: React.FC = () => {
   const absentDays = attendance.filter(a => a.status === 'ABSENT').length;
   const attendancePct = totalDays ? Math.round((presentDays / totalDays) * 100) : 0;
 
-  const pendingTasks = tasks.filter(t => t.status === 'PENDING');
-  const completedTasks = tasks.filter(t => t.status === 'COMPLETED');
-  const overdueTasks = tasks.filter(t => t.status === 'OVERDUE');
+  const pendingTasks = localTasks.filter(t => t.status === 'PENDING');
+  const completedTasks = localTasks.filter(t => t.status === 'COMPLETED');
+  const overdueTasks = localTasks.filter(t => t.status === 'OVERDUE');
+
+  const handleTaskSubmit = (taskId: string) => {
+    setLocalTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: 'COMPLETED' } : t));
+    alert('Task submitted successfully! Awaiting mentor review.');
+  };
 
   const tabs = [
     { id: 'info' as const, label: 'Personal Info', icon: '👤' },
@@ -238,7 +247,7 @@ const StudentDashboard: React.FC = () => {
               <h2 className="text-lg font-bold text-slate-800">All Tasks</h2>
             </div>
             <div className="divide-y divide-white/40">
-              {tasks.map(task => (
+              {localTasks.map(task => (
                 <div key={task.id} className="p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-white/20 transition-colors">
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-1">
@@ -251,7 +260,7 @@ const StudentDashboard: React.FC = () => {
                     <p className="text-xs text-slate-400">Assigned by <span className="font-semibold">{task.assignedByName}</span> • Deadline: <span className="font-semibold">{task.deadline}</span></p>
                   </div>
                   {task.status === 'PENDING' && (
-                    <GlassButton variant="primary" size="sm">Submit</GlassButton>
+                    <GlassButton variant="primary" size="sm" onClick={() => handleTaskSubmit(task.id)}>Submit</GlassButton>
                   )}
                 </div>
               ))}
@@ -318,8 +327,8 @@ const StudentDashboard: React.FC = () => {
                       </div>
 
                       <div className="flex flex-col items-end justify-center min-w-[120px]">
-                        <GlassBadge variant={leave.status === 'PENDING' ? 'warning' : leave.status === 'APPROVED' ? 'success' : 'danger'} className="text-sm px-4 py-1.5 shadow-sm">
-                          {leave.status === 'PENDING' ? '⏳ PENDING' : leave.status}
+                        <GlassBadge variant={leave.status.includes('PENDING') ? 'warning' : leave.status === 'APPROVED' ? 'success' : 'danger'} className="text-sm px-4 py-1.5 shadow-sm">
+                          {leave.status.includes('PENDING') ? `⏳ ${leave.status.replace('_', ' ')}` : leave.status}
                         </GlassBadge>
                         <span className="text-[9px] text-slate-400 font-bold mt-2 uppercase tracking-wider">Current Status</span>
                       </div>
