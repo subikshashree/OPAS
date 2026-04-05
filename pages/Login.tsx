@@ -49,14 +49,12 @@ const Login: React.FC = () => {
 
     const normalizedId = userId.trim().toLowerCase();
 
-    // ─── 1. Attempt Cloud Auth if it's an email ───────────────────
-    if (normalizedId.includes('@')) {
-      const bUser = await loginViaBackend(normalizedId, normalizedId.split('@')[0], '');
-      if (bUser) {
-        login(bUser);
-        navigate('/');
-        return;
-      }
+    // ─── 1. Attempt Cloud Auth ───────────────────
+    const bUser = await loginViaBackend(normalizedId, normalizedId, '');
+    if (bUser) {
+      login(bUser);
+      navigate('/');
+      return;
     }
 
     // ─── 2. Fallback to Local Storage/Shortcodes ─────────────────────

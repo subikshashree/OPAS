@@ -61,8 +61,14 @@ app.post('/api/opas/auth/login', async (req, res) => {
 
     const normalizedEmail = email.trim().toLowerCase();
 
-    // Check if user already exists
-    let user = await usersCollection.findOne({ email: normalizedEmail });
+    // Check if user already exists by email, studentId, or exact _id string match
+    let user = await usersCollection.findOne({ 
+      $or: [
+        { email: normalizedEmail },
+        { studentId: normalizedEmail },
+        { username: normalizedEmail }
+      ] 
+    });
 
     if (user) {
       return res.json(formatUser(user));
