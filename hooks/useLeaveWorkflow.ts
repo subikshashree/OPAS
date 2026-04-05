@@ -17,6 +17,7 @@ export function getLeaveWorkflow(type: LeaveType, isHosteler: boolean): UserRole
       // Sick leave only applies to hostel students, approved by warden only
       return isHosteler ? [UserRole.WARDEN] : [];
       
+    case 'NORMAL':
     case 'SPECIAL_PERMISSION':
       return isHosteler
         ? [UserRole.PARENT, UserRole.WARDEN, UserRole.FACULTY]

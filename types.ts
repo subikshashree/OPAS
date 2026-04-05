@@ -18,7 +18,7 @@ export type Permission =
 
 export type ResidentialType = 'HOSTEL' | 'DAYSCHOLAR';
 
-export type LeaveType = 'SICK' | 'SPECIAL_PERMISSION' | 'OD';
+export type LeaveType = 'SICK' | 'SPECIAL_PERMISSION' | 'OD' | 'NORMAL';
 
 export type LeaveStatus = 
   | 'PENDING_PARENT' 

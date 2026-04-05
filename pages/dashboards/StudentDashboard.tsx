@@ -265,8 +265,8 @@ const StudentDashboard: React.FC = () => {
         <div className="space-y-6">
           <GlassCard variant="light" className="p-8">
             <h2 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2"><span className="text-2xl">⚙️</span> Approval Workflows</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {(['SICK', 'SPECIAL_PERMISSION', 'OD'] as const).map(type => {
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {(['SICK', 'NORMAL', 'SPECIAL_PERMISSION', 'OD'] as const).map(type => {
                 const steps = getWorkflowSteps(type, user.isHosteler || false);
                 return (
                   <div key={type} className="p-5 bg-white/30 rounded-2xl border border-white/40">

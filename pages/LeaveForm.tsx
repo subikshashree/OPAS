@@ -71,6 +71,7 @@ const LeaveForm: React.FC = () => {
                 onChange={(e) => setFormData({...formData, type: e.target.value as LeaveType})}
               >
                 <option value="SICK">Sick Leave (Max 8 hrs)</option>
+                <option value="NORMAL">Normal / Regular Leave</option>
                 <option value="SPECIAL_PERMISSION">Special Permission</option>
                 <option value="OD">On Duty (OD)</option>
               </select>
