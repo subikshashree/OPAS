@@ -16,10 +16,38 @@ const StudentDashboard: React.FC = () => {
   const [showAttendanceDetail, setShowAttendanceDetail] = useState(false);
   const [myLeaves, setMyLeaves] = useState<LeaveRequest[]>([]);
 
+  // Cloud synced relation data
+  const [cloudMentor, setCloudMentor] = useState<any>(null);
+  const [cloudParent, setCloudParent] = useState<any>(null);
+  const [isLoadingLinks, setIsLoadingLinks] = useState(false);
+  const API_BASE = import.meta.env.VITE_API_URL || '/api/opas';
+
   useEffect(() => {
     const saved = JSON.parse(localStorage.getItem('opas_my_leaves') || '[]');
     setMyLeaves(saved);
   }, []);
+
+  useEffect(() => {
+    if (!user) return;
+    const fetchRelations = async () => {
+      setIsLoadingLinks(true);
+      try {
+        const promises = [];
+        if (user.mentorId) {
+           promises.push(fetch(`${API_BASE}/users/${user.mentorId}`).then(res => res.json()).then(data => setCloudMentor(data)).catch(() => {}));
+        }
+        if (user.parentId) {
+           promises.push(fetch(`${API_BASE}/users/${user.parentId}`).then(res => res.json()).then(data => setCloudParent(data)).catch(() => {}));
+        }
+        await Promise.all(promises);
+      } catch (e) {
+        console.error("Cloud lookup failed", e);
+      } finally {
+        setIsLoadingLinks(false);
+      }
+    };
+    fetchRelations();
+  }, [user, API_BASE]);
 
   if (!user) return null;
 
@@ -31,8 +59,6 @@ const StudentDashboard: React.FC = () => {
   const [localTasks, setLocalTasks] = useState(initialTasks);
   
   const placement = MOCK_PLACEMENT[studentId];
-  const mentor = MOCK_USERS_LIST.find(u => u.id === user.mentorId);
-  const parent = MOCK_USERS_LIST.find(u => u.id === user.parentId);
 
   const totalDays = attendance.length;
   const presentDays = attendance.filter(a => a.status === 'PRESENT').length;
@@ -127,13 +153,17 @@ const StudentDashboard: React.FC = () => {
             <div className="space-y-4">
               <div className="p-4 bg-white/30 rounded-xl border border-white/40">
                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Mentor</span>
-                <p className="font-bold text-slate-800 mt-1">{mentor?.name || 'Not Assigned'}</p>
-                <p className="text-xs text-slate-500">{mentor?.email}</p>
+                <p className="font-bold text-slate-800 mt-1">
+                  {isLoadingLinks ? 'Connecting Node...' : cloudMentor?.name || (user.mentorId ? 'Unknown Mentor' : 'Not Assigned')}
+                </p>
+                <p className="text-xs text-slate-500">{cloudMentor?.email || 'Awaiting Sync'}</p>
               </div>
               <div className="p-4 bg-white/30 rounded-xl border border-white/40">
                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Parent / Guardian</span>
-                <p className="font-bold text-slate-800 mt-1">{parent?.name || 'Not Linked'}</p>
-                <p className="text-xs text-slate-500">{parent?.phone}</p>
+                <p className="font-bold text-slate-800 mt-1">
+                  {isLoadingLinks ? 'Connecting Node...' : cloudParent?.name || (user.parentId ? 'Unknown Guardian' : 'Not Linked')}
+                </p>
+                <p className="text-xs text-slate-500">{cloudParent?.email || 'Awaiting Sync'}</p>
               </div>
               <div className="p-4 bg-white/30 rounded-xl border border-white/40">
                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Residential Status</span>

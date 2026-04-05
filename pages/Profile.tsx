@@ -63,35 +63,37 @@ const Profile: React.FC = () => {
           </div>
         </GlassCard>
 
-        <GlassCard variant="light" className="p-8">
-          <h2 className="text-2xl font-bold mb-6 flex items-center gap-3 text-slate-800">
-            <span className="p-2.5 bg-purple-500/10 rounded-xl text-purple-600">🔗</span> 
-            Identity Links
-          </h2>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between p-4 bg-white/40 rounded-2xl border border-white/50 shadow-sm hover:translate-x-1 transition-transform cursor-pointer">
-              <div className="flex items-center gap-4">
-                <span className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center text-lg shadow-inner">👤</span>
-                <span className="font-bold text-slate-700">Mentor Node</span>
+        {user?.roles.includes('STUDENT') && (
+          <GlassCard variant="light" className="p-8">
+            <h2 className="text-2xl font-bold mb-6 flex items-center gap-3 text-slate-800">
+              <span className="p-2.5 bg-purple-500/10 rounded-xl text-purple-600">🔗</span> 
+              Identity Links
+            </h2>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-4 bg-white/40 rounded-2xl border border-white/50 shadow-sm hover:translate-x-1 transition-transform cursor-pointer">
+                <div className="flex items-center gap-4">
+                  <span className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center text-lg shadow-inner">👤</span>
+                  <span className="font-bold text-slate-700">Mentor Node</span>
+                </div>
+                <GlassBadge variant="success">VERIFIED</GlassBadge>
               </div>
-              <GlassBadge variant="success">VERIFIED</GlassBadge>
-            </div>
-            <div className="flex items-center justify-between p-4 bg-white/40 rounded-2xl border border-white/50 shadow-sm hover:translate-x-1 transition-transform cursor-pointer">
-              <div className="flex items-center gap-4">
-                <span className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center text-lg shadow-inner">🏠</span>
-                <span className="font-bold text-slate-700">Guardian Node</span>
+              <div className="flex items-center justify-between p-4 bg-white/40 rounded-2xl border border-white/50 shadow-sm hover:translate-x-1 transition-transform cursor-pointer">
+                <div className="flex items-center gap-4">
+                  <span className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center text-lg shadow-inner">🏠</span>
+                  <span className="font-bold text-slate-700">Guardian Node</span>
+                </div>
+                <GlassBadge variant="success">VERIFIED</GlassBadge>
               </div>
-              <GlassBadge variant="success">VERIFIED</GlassBadge>
-            </div>
-            <div className="flex items-center justify-between p-4 bg-white/40 rounded-2xl border border-white/50 shadow-sm hover:translate-x-1 transition-transform cursor-pointer">
-              <div className="flex items-center gap-4">
-                <span className="w-10 h-10 bg-orange-100 rounded-xl flex items-center justify-center text-lg shadow-inner">🚪</span>
-                <span className="font-bold text-slate-700">Hostel Warden</span>
+              <div className="flex items-center justify-between p-4 bg-white/40 rounded-2xl border border-white/50 shadow-sm hover:translate-x-1 transition-transform cursor-pointer">
+                <div className="flex items-center gap-4">
+                  <span className="w-10 h-10 bg-orange-100 rounded-xl flex items-center justify-center text-lg shadow-inner">🚪</span>
+                  <span className="font-bold text-slate-700">Hostel Warden</span>
+                </div>
+                <GlassBadge variant="warning">MAPPED</GlassBadge>
               </div>
-              <GlassBadge variant="warning">MAPPED</GlassBadge>
             </div>
-          </div>
-        </GlassCard>
+          </GlassCard>
+        )}
       </div>
     </div>
   );

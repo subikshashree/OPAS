@@ -56,7 +56,6 @@
       var(--shadow-glass-neumorphic),
       var(--shadow-glass-inset);
     position: relative;
-    overflow: hidden;
   }
 
   /* ── Light variant (slightly more visible) ── */
