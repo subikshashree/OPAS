@@ -1,9 +1,30 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../App';
 import { GlassCard, GlassBadge, FloatingSphere } from '../components/ui';
 
 const Profile: React.FC = () => {
   const { user } = useAuth();
+  
+  const [cloudMentor, setCloudMentor] = useState<any>(null);
+  const [cloudParent, setCloudParent] = useState<any>(null);
+  const [cloudWarden, setCloudWarden] = useState<any>(null);
+  const API_BASE = import.meta.env.VITE_API_URL || '/api/opas';
+
+  useEffect(() => {
+    if (!user) return;
+    const fetchRelations = async () => {
+      try {
+        const promises = [];
+        if (user.mentorId) promises.push(fetch(`${API_BASE}/users/${user.mentorId}`).then(res => res.json()).then(data => setCloudMentor(data)).catch(() => {}));
+        if (user.parentId) promises.push(fetch(`${API_BASE}/users/${user.parentId}`).then(res => res.json()).then(data => setCloudParent(data)).catch(() => {}));
+        if (user.wardenId) promises.push(fetch(`${API_BASE}/users/${user.wardenId}`).then(res => res.json()).then(data => setCloudWarden(data)).catch(() => {}));
+        await Promise.all(promises);
+      } catch (e) {
+        console.error("Cloud relation lookup failed", e);
+      }
+    };
+    fetchRelations();
+  }, [user, API_BASE]);
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 relative">
@@ -80,23 +101,34 @@ const Profile: React.FC = () => {
               <div className="flex items-center justify-between p-4 bg-white/40 rounded-2xl border border-white/50 shadow-sm hover:translate-x-1 transition-transform cursor-pointer">
                 <div className="flex items-center gap-4">
                   <span className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center text-lg shadow-inner">👤</span>
-                  <span className="font-bold text-slate-700">Mentor Node</span>
+                  <div>
+                    <p className="text-[10px] text-slate-400 font-extrabold uppercase tracking-widest leading-none mb-1">Mentor Node</p>
+                    <span className="font-bold text-slate-700">{cloudMentor ? `${cloudMentor.name} (${user?.mentorId})` : 'Not Assigned'}</span>
+                  </div>
                 </div>
-                <GlassBadge variant="success">VERIFIED</GlassBadge>
+                <GlassBadge variant={cloudMentor ? "success" : "default"}>{cloudMentor ? "VERIFIED" : "UNLINKED"}</GlassBadge>
               </div>
+              
               <div className="flex items-center justify-between p-4 bg-white/40 rounded-2xl border border-white/50 shadow-sm hover:translate-x-1 transition-transform cursor-pointer">
                 <div className="flex items-center gap-4">
                   <span className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center text-lg shadow-inner">🏠</span>
-                  <span className="font-bold text-slate-700">Guardian Node</span>
+                  <div>
+                    <p className="text-[10px] text-slate-400 font-extrabold uppercase tracking-widest leading-none mb-1">Guardian Node</p>
+                    <span className="font-bold text-slate-700">{cloudParent ? `${cloudParent.name} (${user?.parentId})` : 'Not Assigned'}</span>
+                  </div>
                 </div>
-                <GlassBadge variant="success">VERIFIED</GlassBadge>
+                <GlassBadge variant={cloudParent ? "success" : "default"}>{cloudParent ? "VERIFIED" : "UNLINKED"}</GlassBadge>
               </div>
+
               <div className="flex items-center justify-between p-4 bg-white/40 rounded-2xl border border-white/50 shadow-sm hover:translate-x-1 transition-transform cursor-pointer">
                 <div className="flex items-center gap-4">
                   <span className="w-10 h-10 bg-orange-100 rounded-xl flex items-center justify-center text-lg shadow-inner">🚪</span>
-                  <span className="font-bold text-slate-700">Hostel Warden</span>
+                  <div>
+                    <p className="text-[10px] text-slate-400 font-extrabold uppercase tracking-widest leading-none mb-1">Hostel Warden</p>
+                    <span className="font-bold text-slate-700">{cloudWarden ? `${cloudWarden.name} (${user?.wardenId})` : (user?.isHosteler ? 'Not Assigned' : 'Dayscholar')}</span>
+                  </div>
                 </div>
-                <GlassBadge variant="warning">MAPPED</GlassBadge>
+                <GlassBadge variant={cloudWarden ? "warning" : "default"}>{cloudWarden ? "MAPPED" : "UNLINKED"}</GlassBadge>
               </div>
             </div>
           </GlassCard>
