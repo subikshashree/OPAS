@@ -124,6 +124,10 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   );
 };
 
+import { GoogleOAuthProvider } from '@react-oauth/google';
+
+const GOOGLE_CLIENT_ID = "301173592632-56ren1tru7loolmie6ejca9ihmrg29v3.apps.googleusercontent.com";
+
 export default function App() {
   const [user, setUser] = useState<User | null>(() => {
     const saved = localStorage.getItem('opas_user');
@@ -141,20 +145,22 @@ export default function App() {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
-      <HashRouter>
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/" element={<ProtectedRoute><Layout><Dashboard /></Layout></ProtectedRoute>} />
-          <Route path="/attendance" element={<ProtectedRoute><Layout><Attendance /></Layout></ProtectedRoute>} />
-          <Route path="/approvals" element={<ProtectedRoute><Layout><Approvals /></Layout></ProtectedRoute>} />
-          <Route path="/leave" element={<ProtectedRoute><Layout><LeaveForm /></Layout></ProtectedRoute>} />
-          <Route path="/od" element={<ProtectedRoute><Layout><LeaveForm forceType="OD" /></Layout></ProtectedRoute>} />
-          <Route path="/profile" element={<ProtectedRoute><Layout><Profile /></Layout></ProtectedRoute>} />
-          <Route path="/users" element={<ProtectedRoute><Layout><UserManagement /></Layout></ProtectedRoute>} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </HashRouter>
-    </AuthContext.Provider>
+    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+      <AuthContext.Provider value={{ user, login, logout }}>
+        <HashRouter>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/" element={<ProtectedRoute><Layout><Dashboard /></Layout></ProtectedRoute>} />
+            <Route path="/attendance" element={<ProtectedRoute><Layout><Attendance /></Layout></ProtectedRoute>} />
+            <Route path="/approvals" element={<ProtectedRoute><Layout><Approvals /></Layout></ProtectedRoute>} />
+            <Route path="/leave" element={<ProtectedRoute><Layout><LeaveForm /></Layout></ProtectedRoute>} />
+            <Route path="/od" element={<ProtectedRoute><Layout><LeaveForm forceType="OD" /></Layout></ProtectedRoute>} />
+            <Route path="/profile" element={<ProtectedRoute><Layout><Profile /></Layout></ProtectedRoute>} />
+            <Route path="/users" element={<ProtectedRoute><Layout><UserManagement /></Layout></ProtectedRoute>} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </HashRouter>
+      </AuthContext.Provider>
+    </GoogleOAuthProvider>
   );
 }

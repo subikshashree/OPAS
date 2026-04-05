@@ -5,11 +5,14 @@ import { MOCK_USERS_LIST } from '../constants';
 import { UserRole } from '../types';
 import { GlassCard, GlassButton, GlassInput, FloatingSphere } from '../components/ui';
 
+import { useGoogleLogin } from '@react-oauth/google';
+
 const Login: React.FC = () => {
   const [userId, setUserId] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
 
@@ -51,6 +54,38 @@ const Login: React.FC = () => {
     }, 800);
   };
 
+  const loginWithGoogle = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      setIsGoogleLoading(true);
+      setError('');
+      try {
+        // Fetch user info using the access token
+        const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+          headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
+        });
+        const googleUser = await res.json();
+        
+        if (googleUser.email) {
+          const foundUser = MOCK_USERS_LIST.find(u => u.email.toLowerCase() === googleUser.email.toLowerCase());
+          if (foundUser) {
+            login(foundUser);
+            navigate('/');
+          } else {
+             // For demo purposes, if email isn't found, log them in as a student to avoid blocking them while testing
+             setError('Email not registered in database. Access Denied.');
+             setIsGoogleLoading(false);
+          }
+        }
+      } catch (err) {
+        setError('Failed to authenticate with Google.');
+        setIsGoogleLoading(false);
+      }
+    },
+    onError: () => {
+      setError('Google Login was canceled or failed.');
+    }
+  });
+
   return (
     <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-[#e8e5df] font-sans">
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
@@ -72,12 +107,12 @@ const Login: React.FC = () => {
             </div>
           </div>
           
-          <div className="mb-8">
+          <div className="mb-6">
             <h1 className="text-3xl font-extrabold tracking-tight text-slate-800">OPAS Workspace</h1>
             <p className="text-sm text-slate-500 font-medium mt-2">Premium Operating Interface</p>
           </div>
 
-          <form onSubmit={handleLogin} className="space-y-5 text-left">
+          <form onSubmit={handleLogin} className="space-y-4 text-left mb-6">
             <div className="space-y-2">
               <label className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-2">System Identity</label>
               <GlassInput
@@ -112,8 +147,8 @@ const Login: React.FC = () => {
               type="submit"
               variant="primary"
               size="lg"
-              className="w-full mt-4"
-              disabled={isLoading}
+              className="w-full mt-2"
+              disabled={isLoading || isGoogleLoading}
             >
               {isLoading ? (
                 <>
@@ -123,6 +158,28 @@ const Login: React.FC = () => {
               ) : 'Access Terminal'}
             </GlassButton>
           </form>
+
+          <div className="relative flex py-2 items-center mb-6">
+            <div className="flex-grow border-t border-slate-300"></div>
+            <span className="flex-shrink-0 mx-4 text-slate-400 text-xs font-bold uppercase tracking-wider">or continue with</span>
+            <div className="flex-grow border-t border-slate-300"></div>
+          </div>
+
+          <GlassButton 
+            type="button"
+            variant="secondary"
+            size="lg"
+            className="w-full bg-white/50 hover:bg-white/80"
+            onClick={() => loginWithGoogle()}
+            disabled={isLoading || isGoogleLoading}
+          >
+            {isGoogleLoading ? (
+               <span className="w-5 h-5 border-2 border-slate-400 border-t-slate-800 rounded-full animate-spin mr-3"></span>
+            ) : (
+               <svg className="w-5 h-5 mr-3" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g clipPath="url(#clip0_32_4705)"><path d="M23.7659 12.2741C23.7659 11.4601 23.6999 10.6391 23.5579 9.83911H12.2399V14.4581H18.7209C18.4379 15.9381 17.5879 17.2681 16.3269 18.1041V21.0961H20.1899C22.4609 19.0061 23.7659 15.9261 23.7659 12.2741Z" fill="#4285F4"/><path d="M12.2403 23.9998C15.4853 23.9998 18.2083 22.9378 20.1903 21.0958L16.3273 18.1038C15.2533 18.8328 13.8633 19.2518 12.2403 19.2518C9.11234 19.2518 6.45834 17.1398 5.50634 14.3008H1.51538V17.3918C3.55238 21.4428 7.69734 23.9998 12.2403 23.9998Z" fill="#34A853"/><path d="M5.50153 14.2996C5.00853 12.8256 5.00853 11.1736 5.50153 9.69961V6.60861H1.51553C-0.186469 10.0046 -0.186469 13.9946 1.51553 17.3906L5.50153 14.2996Z" fill="#FBBC05"/><path d="M12.2403 4.74766C13.9573 4.72266 15.6023 5.36566 16.8423 6.54766L20.2683 3.12166C18.1013 1.08266 15.2213 -0.0353412 12.2403 0.000658826C7.69734 0.000658826 3.55238 2.55666 1.51538 6.60766L5.50038 9.69866C6.45138 6.85266 9.10834 4.74766 12.2403 4.74766Z" fill="#EA4335"/></g><defs><clipPath id="clip0_32_4705"><rect width="24" height="24" fill="white"/></clipPath></defs></svg>
+            )}
+            Sign in with Google
+          </GlassButton>
 
           <div className="mt-8 grid grid-cols-3 gap-2 text-center text-[10px] font-bold uppercase tracking-tighter">
              {['student', 'mentor', 'parent', 'hod', 'warden', 'admin'].map(r => (
