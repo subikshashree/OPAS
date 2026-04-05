@@ -52,13 +52,16 @@ const StudentDashboard: React.FC = () => {
   if (!user) return null;
 
   const studentId = user.id;
-  const attendance = MOCK_ATTENDANCE[studentId] || [];
+  const attendance = MOCK_ATTENDANCE[studentId] || MOCK_ATTENDANCE['1001'] || [];
   
   // Use local state for tasks so we can click 'Submit' and see it change
-  const initialTasks = MOCK_TASKS.filter(t => t.assignedTo === studentId);
+  let initialTasks = MOCK_TASKS.filter(t => t.assignedTo === studentId);
+  if (initialTasks.length === 0) {
+    initialTasks = MOCK_TASKS.filter(t => t.assignedTo === '1001');
+  }
   const [localTasks, setLocalTasks] = useState(initialTasks);
   
-  const placement = MOCK_PLACEMENT[studentId];
+  const placement = MOCK_PLACEMENT[studentId] || MOCK_PLACEMENT['1001'];
 
   const totalDays = attendance.length;
   const presentDays = attendance.filter(a => a.status === 'PRESENT').length;
