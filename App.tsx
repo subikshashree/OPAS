@@ -103,13 +103,22 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
              </button>
 
              {/* Profile */}
-             <div className="flex items-center gap-3 bg-white/30 border border-white/40 pl-2 pr-4 py-1.5 rounded-2xl cursor-pointer hover:bg-white/50 transition-colors" onClick={logout}>
+             <Link to="/profile" className="flex items-center gap-3 bg-white/30 border border-white/40 pl-2 pr-4 py-1.5 rounded-2xl cursor-pointer hover:bg-white/50 transition-colors">
                 <img src={user.avatar} className="w-8 h-8 rounded-full border border-white/60 object-cover" alt="Avatar" />
                 <div className="hidden sm:block text-left">
                   <p className="text-slate-800 text-xs font-bold leading-tight">{user.name}</p>
                   <p className="text-slate-500 text-[9px] uppercase tracking-wider font-semibold">{user.roles[0]}</p>
                 </div>
-             </div>
+             </Link>
+
+             {/* Logout Button */}
+             <button 
+               onClick={logout}
+               title="Sign Out"
+               className="p-2 w-10 h-10 flex items-center justify-center rounded-xl bg-white/30 border border-white/40 text-slate-600 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 transition-all shadow-sm"
+             >
+               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+             </button>
           </div>
         </nav>
       </header>
