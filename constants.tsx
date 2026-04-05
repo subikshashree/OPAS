@@ -235,6 +235,13 @@ export const MOCK_DEPARTMENT_STATS: DepartmentStats[] = [
   { name: 'Civil', totalStudents: 80, totalFaculty: 10, avgAttendance: 84, avgCgpa: 7.9, placementRate: 55 },
 ];
 
+export const MOCK_DEPARTMENTS: any[] = [
+  { department_id: 'DEP-CS', department_name: 'Computer Science', hod_id: 'HOD001', created_at: '2020-05-12T10:00:00Z' },
+  { department_id: 'DEP-EC', department_name: 'Electronics', hod_id: 'HOD002', created_at: '2020-05-12T10:00:00Z' },
+  { department_id: 'DEP-ME', department_name: 'Mechanical', hod_id: 'HOD003', created_at: '2020-05-12T10:00:00Z' },
+  { department_id: 'DEP-CV', department_name: 'Civil', hod_id: 'HOD004', created_at: '2020-05-12T10:00:00Z' },
+];
+
 // ─── Mentor Analysis ────────────────────────────────────────────────
 export const MOCK_MENTOR_ANALYSIS: MentorAnalysis[] = [
   { menteeId: 's1', menteeName: 'Alex Johnson', attendance: 85, cgpa: 8.67, pendingTasks: 1, completedTasks: 1, complaints: ['Irregular sleep schedule'] },

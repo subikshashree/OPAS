@@ -143,6 +143,13 @@ export interface AcademicRecord {
   cgpa: number;
 }
 
+export interface Department {
+  department_id: string;
+  department_name: string;
+  hod_id: string;
+  created_at: string;
+}
+
 export interface DepartmentStats {
   name: string;
   totalStudents: number;

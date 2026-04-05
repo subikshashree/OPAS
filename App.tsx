@@ -9,6 +9,7 @@ import Approvals from './pages/Approvals';
 import LeaveForm from './pages/LeaveForm';
 import Profile from './pages/Profile';
 import UserManagement from './pages/UserManagement';
+import DepartmentManagement from './pages/DepartmentManagement';
 import Login from './pages/Login';
 
 // Auth Context
@@ -171,6 +172,7 @@ export default function App() {
             <Route path="/od" element={<ProtectedRoute><Layout><LeaveForm forceType="OD" /></Layout></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><Layout><Profile /></Layout></ProtectedRoute>} />
             <Route path="/users" element={<ProtectedRoute><Layout><UserManagement /></Layout></ProtectedRoute>} />
+            <Route path="/departments" element={<ProtectedRoute><Layout><DepartmentManagement /></Layout></ProtectedRoute>} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </HashRouter>
