@@ -36,6 +36,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, logout } = useAuth();
   const location = useLocation();
+  const [showNotifications, setShowNotifications] = useState(false);
 
   if (!user) return null;
 
@@ -102,10 +103,44 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
              </div>
              
              {/* Notifications */}
-             <button className="relative p-2 rounded-xl bg-white/30 hover:bg-white/50 border border-white/40 transition-colors">
-               <span className="absolute top-1 right-1 w-2 h-2 bg-rose-500 rounded-full border border-white"></span>
-               🔔
-             </button>
+             <div className="relative">
+               <button 
+                 onClick={() => setShowNotifications(!showNotifications)}
+                 className="relative p-2 rounded-xl bg-white/30 hover:bg-white/50 border border-white/40 transition-colors"
+               >
+                 <span className="absolute top-1 right-1 w-2 h-2 bg-rose-500 rounded-full border border-white"></span>
+                 🔔
+               </button>
+               
+               {showNotifications && (
+                 <div className="absolute top-12 right-0 w-80 bg-white/95 backdrop-blur-xl border border-white shadow-2xl rounded-2xl overflow-hidden z-50 animate-in slide-in-from-top-2 duration-200">
+                   <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                     <h3 className="font-bold text-slate-800">Notifications</h3>
+                     <span className="text-[10px] uppercase font-bold text-indigo-600 bg-indigo-100 px-2 py-1 rounded-md">2 New</span>
+                   </div>
+                   <div className="max-h-80 overflow-y-auto no-scrollbar divide-y divide-slate-100">
+                     <div className="p-4 hover:bg-slate-50 transition-colors cursor-pointer opacity-100">
+                       <p className="text-sm font-semibold text-slate-800">System Maintenance ⚙️</p>
+                       <p className="text-xs text-slate-500 mt-1">Scheduled outage tonight at 2 AM.</p>
+                       <p className="text-[10px] text-slate-400 mt-2">10 mins ago</p>
+                     </div>
+                     <div className="p-4 hover:bg-slate-50 transition-colors cursor-pointer opacity-100">
+                       <p className="text-sm font-semibold text-slate-800">New Task Assigned 📋</p>
+                       <p className="text-xs text-slate-500 mt-1">Check your dashboard for upcoming academic assignments.</p>
+                       <p className="text-[10px] text-slate-400 mt-2">1 hr ago</p>
+                     </div>
+                     <div className="p-4 hover:bg-slate-50 transition-colors cursor-pointer opacity-60">
+                       <p className="text-sm font-semibold text-slate-800">Leave Approved ✅</p>
+                       <p className="text-xs text-slate-500 mt-1">Your recent OD request was fully approved.</p>
+                       <p className="text-[10px] text-slate-400 mt-2">Yesterday</p>
+                     </div>
+                   </div>
+                   <div className="p-3 border-t border-slate-100 text-center bg-slate-50/50">
+                     <button className="text-xs font-bold text-indigo-600 hover:text-indigo-800 transition-colors">Mark all as read</button>
+                   </div>
+                 </div>
+               )}
+             </div>
 
              {/* Profile */}
              <Link to="/profile" className="flex items-center gap-3 bg-white/30 border border-white/40 pl-2 pr-4 py-1.5 rounded-2xl cursor-pointer hover:bg-white/50 transition-colors">
