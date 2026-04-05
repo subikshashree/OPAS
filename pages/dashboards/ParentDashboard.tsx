@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../App';
 import { UserRole, LeaveRequest } from '../../types';
 import { MOCK_USERS_LIST, MOCK_ATTENDANCE, MOCK_PLACEMENT } from '../../constants';
@@ -6,12 +7,20 @@ import { GlassCard, GlassButton, GlassBadge, FloatingSphere } from '../../compon
 
 const ParentDashboard: React.FC = () => {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<'ward' | 'attendance' | 'placement' | 'leaves' | 'interact'>('ward');
+  const { tab } = useParams<{ tab: string }>();
+  const navigate = useNavigate();
+  
+  const activeTab = tab || 'ward';
   const [allLeaves, setAllLeaves] = useState<LeaveRequest[]>([]);
+  const [refresh, setRefresh] = useState(0);
 
   useEffect(() => {
     const saved = JSON.parse(localStorage.getItem('opas_my_leaves') || '[]');
     setAllLeaves(saved);
+
+    const handleStorage = () => setRefresh(prev => prev + 1);
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
   }, []);
 
   if (!user) return null;
@@ -72,13 +81,13 @@ const ParentDashboard: React.FC = () => {
 
       {/* Tabs */}
       <div className="flex gap-2 p-1.5 bg-white/20 rounded-2xl border border-white/30 backdrop-blur-md overflow-x-auto no-scrollbar">
-        {tabs.map(tab => (
-          <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+        {tabs.map(t => (
+          <button key={t.id} onClick={() => navigate(`/parent/${t.id}`)}
             className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 flex items-center gap-2 whitespace-nowrap ${
-              activeTab === tab.id ? 'bg-white/60 shadow-sm text-indigo-700' : 'text-slate-500 hover:text-slate-800 hover:bg-white/30'
+              activeTab === t.id ? 'bg-white/60 shadow-sm text-indigo-700' : 'text-slate-500 hover:text-slate-800 hover:bg-white/30'
             }`}
           >
-            <span>{tab.icon}</span>{tab.label}
+            <span>{t.icon}</span>{t.label}
           </button>
         ))}
       </div>
@@ -208,26 +217,75 @@ const ParentDashboard: React.FC = () => {
       )}
 
       {/* ── Interaction Portal ── */}
-      {activeTab === 'interact' && (
-        <GlassCard variant="light" className="p-8">
-          <h2 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-3">
-            <span className="p-2 bg-indigo-500/10 rounded-xl">💬</span> Mentor Communication
-          </h2>
-          <div className="bg-white/30 border border-white/40 rounded-2xl p-6 text-center">
-            {mentor ? (
-              <>
-                <img src={mentor.avatar} className="w-16 h-16 rounded-2xl border-2 border-white shadow-md object-cover mx-auto mb-4" alt="" />
-                <h3 className="font-bold text-lg text-slate-800">{mentor.name}</h3>
-                <p className="text-sm text-slate-500 mb-4">{mentor.email} • {mentor.phone}</p>
-                <GlassButton variant="primary" className="mx-auto" onClick={() => {
-                  const msg = prompt(`Enter your message for ${mentor.name}:`);
-                  if (msg) alert('Message transmitted successfully! The mentor will respond shortly.');
-                }}>Send Message</GlassButton>
-              </>
-            ) : (
-              <p className="text-slate-400">No mentor assigned to your ward.</p>
-            )}
+      {activeTab === 'interact' && mentor && (
+        <GlassCard variant="light" className="p-0 overflow-hidden flex flex-col h-[500px]">
+          <div className="p-4 border-b border-white/40 flex items-center gap-4 bg-white/20">
+            <img src={mentor.avatar} className="w-10 h-10 rounded-full border-2 border-white object-cover shadow-sm" alt="" />
+            <div>
+              <h2 className="font-bold text-slate-800">{mentor.name}</h2>
+              <p className="text-xs text-slate-500">Mentor • {mentor.department}</p>
+            </div>
           </div>
+          
+          <div className="flex-1 p-6 overflow-y-auto space-y-4 no-scrollbar flex flex-col">
+            {JSON.parse(localStorage.getItem('opas_messages') || '[]')
+              .filter((m: any) => (m.sender_id === user.id && m.receiver_id === mentor.id) || (m.sender_id === mentor.id && m.receiver_id === user.id))
+              .map((m: any) => (
+              <div key={m.id} className={`max-w-[70%] p-3 rounded-2xl ${m.sender_id === user.id ? 'bg-indigo-500 text-white self-end rounded-br-sm' : 'bg-white/80 text-slate-800 self-start rounded-bl-sm border border-white/50 shadow-sm'}`}>
+                <p className="text-sm">{m.text}</p>
+                <p className={`text-[9px] mt-1 text-right ${m.sender_id === user.id ? 'text-indigo-200' : 'text-slate-400'}`}>{new Date(m.timestamp).toLocaleTimeString()}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="p-4 border-t border-white/40 bg-white/10 flex gap-2">
+            <input 
+              type="text" 
+              id="messageInput"
+              placeholder="Type your message..."
+              className="flex-1 bg-white/50 border border-white/60 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && e.currentTarget.value.trim()) {
+                  const msgs = JSON.parse(localStorage.getItem('opas_messages') || '[]');
+                  msgs.push({
+                    id: Date.now().toString(),
+                    sender_id: user.id,
+                    receiver_id: mentor.id,
+                    student_id: ward?.id,
+                    text: e.currentTarget.value.trim(),
+                    timestamp: new Date().toISOString()
+                  });
+                  localStorage.setItem('opas_messages', JSON.stringify(msgs));
+                  e.currentTarget.value = '';
+                  // Force re-render via state update on window
+                  window.dispatchEvent(new Event('storage'));
+                }
+              }}
+            />
+            <GlassButton variant="primary" onClick={() => {
+              const input = document.getElementById('messageInput') as HTMLInputElement;
+              if (input && input.value.trim()) {
+                const msgs = JSON.parse(localStorage.getItem('opas_messages') || '[]');
+                msgs.push({
+                  id: Date.now().toString(),
+                  sender_id: user.id,
+                  receiver_id: mentor.id,
+                  student_id: ward?.id,
+                  text: input.value.trim(),
+                  timestamp: new Date().toISOString()
+                });
+                localStorage.setItem('opas_messages', JSON.stringify(msgs));
+                input.value = '';
+                window.dispatchEvent(new Event('storage'));
+              }
+            }}>Send</GlassButton>
+          </div>
+        </GlassCard>
+      )}
+      
+      {activeTab === 'interact' && !mentor && (
+        <GlassCard variant="light" className="p-8 text-center text-slate-500">
+          No mentor assigned to this ward.
         </GlassCard>
       )}
     </div>

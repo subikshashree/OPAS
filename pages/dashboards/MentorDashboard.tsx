@@ -1,28 +1,62 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../App';
-import { UserRole } from '../../types';
-import { MOCK_USERS_LIST, MOCK_MENTOR_ANALYSIS, MOCK_TASKS, MOCK_LEAVE_REQUESTS } from '../../constants';
+import { UserRole, LeaveRequest } from '../../types';
+import { MOCK_USERS_LIST, MOCK_MENTOR_ANALYSIS, MOCK_TASKS } from '../../constants';
 import { GlassCard, GlassButton, GlassBadge, FloatingSphere } from '../../components/ui';
 
 const MentorDashboard: React.FC = () => {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<'mentees' | 'tasks' | 'leaves' | 'analysis'>('mentees');
+  const { tab } = useParams<{ tab: string }>();
+  const navigate = useNavigate();
+  
+  const activeTab = tab || 'mentees';
+  const [allLeaves, setAllLeaves] = useState<LeaveRequest[]>([]);
+  const [refresh, setRefresh] = useState(0);
+
+  useEffect(() => {
+    const saved = JSON.parse(localStorage.getItem('opas_my_leaves') || '[]');
+    setAllLeaves(saved);
+
+    const handleStorage = () => setRefresh(prev => prev + 1);
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
+  }, []);
 
   if (!user) return null;
 
   const mentees = MOCK_USERS_LIST.filter(u => u.roles.includes(UserRole.STUDENT) && u.mentorId === user.id);
+  // Find all parents connected to those mentees
+  const parents = MOCK_USERS_LIST.filter(u => mentees.some(m => m.id === u.wardId) && u.roles.includes(UserRole.PARENT));
+
   const allTasks = MOCK_TASKS.filter(t => t.assignedBy === user.id);
-  const leaveQueue = MOCK_LEAVE_REQUESTS.filter(lr => lr.status === 'PENDING_MENTOR');
+  const leaveQueue = allLeaves.filter(lr => lr.status === 'PENDING_MENTOR');
   const analysis = MOCK_MENTOR_ANALYSIS;
 
   const pendingTasks = allTasks.filter(t => t.status === 'PENDING').length;
   const completedTasks = allTasks.filter(t => t.status === 'COMPLETED').length;
+
+  const handleAction = (id: string, approved: boolean) => {
+    const updated = allLeaves.map(lr => {
+      if (lr.id === id) {
+        return {
+          ...lr,
+          status: approved ? (lr.type === 'OD' ? 'PENDING_HOD' : 'APPROVED') : 'REJECTED'
+        };
+      }
+      return lr;
+    });
+    setAllLeaves(updated);
+    localStorage.setItem('opas_my_leaves', JSON.stringify(updated));
+    alert(approved ? 'Leave application approved!' : 'Leave application rejected!');
+  };
 
   const tabs = [
     { id: 'mentees' as const, label: 'Mentee Details', icon: '👥' },
     { id: 'tasks' as const, label: 'Task Status', icon: '📋' },
     { id: 'leaves' as const, label: 'Leave Approval', icon: '⏳' },
     { id: 'analysis' as const, label: 'Analysis', icon: '📊' },
+    { id: 'interact' as const, label: 'Parent Messages', icon: '💬' },
   ];
 
   return (
@@ -59,13 +93,13 @@ const MentorDashboard: React.FC = () => {
 
       {/* Tabs */}
       <div className="flex gap-2 p-1.5 bg-white/20 rounded-2xl border border-white/30 backdrop-blur-md overflow-x-auto no-scrollbar">
-        {tabs.map(tab => (
-          <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+        {tabs.map(t => (
+          <button key={t.id} onClick={() => navigate(`/mentor/${t.id}`)}
             className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 flex items-center gap-2 whitespace-nowrap ${
-              activeTab === tab.id ? 'bg-white/60 shadow-sm text-indigo-700' : 'text-slate-500 hover:text-slate-800 hover:bg-white/30'
+              activeTab === t.id ? 'bg-white/60 shadow-sm text-indigo-700' : 'text-slate-500 hover:text-slate-800 hover:bg-white/30'
             }`}
           >
-            <span>{tab.icon}</span>{tab.label}
+            <span>{t.icon}</span>{t.label}
           </button>
         ))}
       </div>
@@ -150,8 +184,20 @@ const MentorDashboard: React.FC = () => {
                 </div>
               </div>
               <div className="flex gap-3">
-                <GlassButton variant="ghost" className="text-rose-600 hover:bg-rose-50 border border-rose-200">Reject</GlassButton>
-                <GlassButton variant="primary" className="bg-gradient-to-r from-emerald-500 to-emerald-600 border-none shadow-[0_5px_20px_rgba(16,185,129,0.3)]">Approve</GlassButton>
+                <GlassButton 
+                  onClick={() => handleAction(lr.id, false)}
+                  variant="ghost" 
+                  className="text-rose-600 hover:bg-rose-50 border border-rose-200"
+                >
+                  Reject
+                </GlassButton>
+                <GlassButton 
+                  onClick={() => handleAction(lr.id, true)}
+                  variant="primary" 
+                  className="bg-gradient-to-r from-emerald-500 to-emerald-600 border-none shadow-[0_5px_20px_rgba(16,185,129,0.3)]"
+                >
+                  Approve
+                </GlassButton>
               </div>
             </GlassCard>
           ))}
@@ -212,6 +258,89 @@ const MentorDashboard: React.FC = () => {
             </div>
           </GlassCard>
         </div>
+      )}
+
+      {/* ── Parent Interaction ── */}
+      {activeTab === 'interact' && (
+        <GlassCard variant="light" className="p-0 overflow-hidden flex h-[500px]">
+          {/* Sidebar logic - List all parents. Simplified to first parent for demo */}
+          <div className="w-1/3 border-r border-white/40 bg-white/20 p-4 space-y-2 overflow-y-auto no-scrollbar">
+            <h3 className="font-bold text-xs text-slate-500 uppercase tracking-widest pl-2 mb-4">Student Parents</h3>
+            {parents.map(p => (
+              <div key={p.id} className="p-3 bg-white/40 rounded-xl hover:bg-white/60 cursor-pointer transition-colors flex items-center gap-3">
+                <img src={p.avatar} className="w-10 h-10 rounded-full border border-white" />
+                <div>
+                  <p className="text-sm font-bold text-slate-800">{p.name}</p>
+                </div>
+              </div>
+            ))}
+            {parents.length === 0 && <p className="text-sm text-slate-400 pl-2">No parents found.</p>}
+          </div>
+
+          {/* Chat Pane */}
+          {parents.length > 0 ? (
+          <div className="flex-1 flex flex-col">
+            <div className="p-4 border-b border-white/40 bg-white/10">
+              <h2 className="font-bold text-slate-800">Chat with {parents[0].name}</h2>
+            </div>
+            
+            <div className="flex-1 p-6 overflow-y-auto space-y-4 no-scrollbar flex flex-col">
+              {JSON.parse(localStorage.getItem('opas_messages') || '[]')
+                .filter((m: any) => (m.sender_id === user.id && m.receiver_id === parents[0].id) || (m.sender_id === parents[0].id && m.receiver_id === user.id))
+                .map((m: any) => (
+                <div key={m.id} className={`max-w-[70%] p-3 rounded-2xl ${m.sender_id === user.id ? 'bg-indigo-500 text-white self-end rounded-br-sm' : 'bg-white/80 text-slate-800 self-start rounded-bl-sm border border-white/50 shadow-sm'}`}>
+                  <p className="text-sm">{m.text}</p>
+                  <p className={`text-[9px] mt-1 text-right ${m.sender_id === user.id ? 'text-indigo-200' : 'text-slate-400'}`}>{new Date(m.timestamp).toLocaleTimeString()}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="p-4 border-t border-white/40 bg-white/10 flex gap-2">
+              <input 
+                type="text" 
+                id="mentorMessageInput"
+                placeholder="Type your reply..."
+                className="flex-1 bg-white/50 border border-white/60 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && e.currentTarget.value.trim()) {
+                    const msgs = JSON.parse(localStorage.getItem('opas_messages') || '[]');
+                    msgs.push({
+                      id: Date.now().toString(),
+                      sender_id: user.id,
+                      receiver_id: parents[0].id,
+                      text: e.currentTarget.value.trim(),
+                      timestamp: new Date().toISOString()
+                    });
+                    localStorage.setItem('opas_messages', JSON.stringify(msgs));
+                    e.currentTarget.value = '';
+                    window.dispatchEvent(new Event('storage'));
+                  }
+                }}
+              />
+              <GlassButton variant="primary" onClick={() => {
+                const input = document.getElementById('mentorMessageInput') as HTMLInputElement;
+                if (input && input.value.trim()) {
+                  const msgs = JSON.parse(localStorage.getItem('opas_messages') || '[]');
+                  msgs.push({
+                    id: Date.now().toString(),
+                    sender_id: user.id,
+                    receiver_id: parents[0].id,
+                    text: input.value.trim(),
+                    timestamp: new Date().toISOString()
+                  });
+                  localStorage.setItem('opas_messages', JSON.stringify(msgs));
+                  input.value = '';
+                  window.dispatchEvent(new Event('storage'));
+                }
+              }}>Send</GlassButton>
+            </div>
+          </div>
+          ) : (
+            <div className="flex-1 flex items-center justify-center text-slate-400">
+              No conversations available.
+            </div>
+          )}
+        </GlassCard>
       )}
     </div>
   );

@@ -63,26 +63,8 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
              <span className="text-slate-800 font-bold text-xl tracking-tight hidden sm:block">OPAS</span>
           </div>
 
-          {/* Navigation Links */}
-          <div className="hidden md:flex items-center gap-1 p-1 bg-white/15 rounded-2xl border border-white/25 backdrop-blur-md">
-            {currentNav.map((item) => {
-              const isActive = location.pathname === item.path;
-              return (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 flex items-center gap-2 ${
-                    isActive
-                      ? "bg-white/60 shadow-sm text-indigo-700"
-                      : "text-slate-600 hover:text-slate-900 hover:bg-white/40"
-                  }`}
-                >
-                  <span>{item.icon}</span>
-                  {item.label}
-                </Link>
-              );
-            })}
-          </div>
+          {/* Hidden Duplicate Navigation */}
+          <div className="hidden md:flex items-center gap-1 p-1" />
 
           {/* Right Actions */}
           <div className="flex items-center gap-4">
@@ -160,6 +142,7 @@ export default function App() {
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/" element={<ProtectedRoute><Layout><Dashboard /></Layout></ProtectedRoute>} />
+            <Route path="/:roleDashboard/:tab" element={<ProtectedRoute><Layout><Dashboard /></Layout></ProtectedRoute>} />
             <Route path="/attendance" element={<ProtectedRoute><Layout><Attendance /></Layout></ProtectedRoute>} />
             <Route path="/approvals" element={<ProtectedRoute><Layout><Approvals /></Layout></ProtectedRoute>} />
             <Route path="/leave" element={<ProtectedRoute><Layout><LeaveForm /></Layout></ProtectedRoute>} />
