@@ -4,7 +4,6 @@ import { useAuth } from '../../App';
 import { UserRole, LeaveRequest } from '../../types';
 import { MOCK_ACADEMIC_DATA, MOCK_ATTENDANCE, MOCK_PLACEMENT, MOCK_TASKS, MOCK_USERS_LIST } from '../../constants';
 import { GlassCard, GlassButton, GlassBadge, FloatingSphere } from '../../components/ui';
-import { getWorkflowSteps } from '../../hooks/useLeaveWorkflow';
 import { useToast } from '../../hooks/useToast';
 
 const StudentDashboard: React.FC = () => {
@@ -24,7 +23,6 @@ const StudentDashboard: React.FC = () => {
 
   useEffect(() => {
     if (!user) return;
-    const API_BASE = import.meta.env.VITE_API_URL || '/api/opas';
     fetch(`${API_BASE}/leaves`)
       .then(r => r.json())
       .then(data => {
@@ -321,28 +319,15 @@ const StudentDashboard: React.FC = () => {
       {activeTab === 'leave' && (
         <div className="space-y-6">
           <GlassCard variant="light" className="p-8">
-            <h2 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2"><span className="text-2xl">⚙️</span> Approval Workflows</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {(['SICK', 'NORMAL', 'SPECIAL_PERMISSION', 'OD'] as const).map(type => {
-                const steps = getWorkflowSteps(type, user.isHosteler || false);
-                return (
-                  <div key={type} className="p-5 bg-white/30 rounded-2xl border border-white/40">
-                    <GlassBadge variant={type === 'SICK' ? 'danger' : type === 'OD' ? 'info' : 'warning'} className="mb-3">
-                      {type.replace('_', ' ')}
-                    </GlassBadge>
-                    <div className="flex flex-wrap items-center gap-2 mt-2">
-                      {steps.map((step, i) => (
-                        <React.Fragment key={step.label}>
-                          <span className="px-3 py-1 bg-white/50 rounded-lg text-xs font-bold text-indigo-700 border border-indigo-200/50">{step.label}</span>
-                          {i < steps.length - 1 && <span className="text-indigo-300">→</span>}
-                        </React.Fragment>
-                      ))}
-                    </div>
-                    {type === 'SICK' && <p className="text-[10px] text-slate-400 mt-2 font-medium">Max 8 hours • Hostel students only</p>}
-                  </div>
-                );
-              })}
+            <h2 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2"><span className="text-2xl">⚙️</span> Approval Workflow</h2>
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="px-4 py-2 bg-white/50 rounded-xl text-sm font-bold text-indigo-700 border border-indigo-200/50">Parent</span>
+              <span className="text-indigo-300 font-bold">+</span>
+              <span className="px-4 py-2 bg-white/50 rounded-xl text-sm font-bold text-indigo-700 border border-indigo-200/50">Mentor</span>
+              <span className="text-indigo-300 font-bold">→</span>
+              <span className="px-4 py-2 bg-emerald-50 rounded-xl text-sm font-bold text-emerald-700 border border-emerald-200/50">✅ Approved</span>
             </div>
+            <p className="text-xs text-slate-400 mt-3 font-medium">Both Parent and Mentor must approve for the leave to be finalized.</p>
           </GlassCard>
 
           <GlassCard variant="light" className="p-0 overflow-hidden">

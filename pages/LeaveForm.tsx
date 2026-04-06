@@ -3,13 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../App';
 import { UserRole, LeaveType } from '../types';
 import { GlassCard, GlassButton, GlassInput, GlassBadge } from '../components/ui';
-import { getWorkflowSteps } from '../hooks/useLeaveWorkflow';
+interface LeaveFormProps {
+  forceType?: LeaveType;
+}
 
-const LeaveForm: React.FC = () => {
+const LeaveForm: React.FC<LeaveFormProps> = ({ forceType }) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    type: 'SICK' as LeaveType,
+    type: forceType || ('SICK' as LeaveType),
     startDate: '',
     startTime: '',
     endDate: '',

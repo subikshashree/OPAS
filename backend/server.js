@@ -284,10 +284,15 @@ app.get('/api/opas/leaves', async (req, res) => {
 app.post('/api/opas/leaves', async (req, res) => {
   try {
     const newLeave = req.body;
-    // We expect the frontend to pass the leave object. Just ensure we sanitize id for mongo.
+
+    // ─── Input Validation ───
+    if (!newLeave.studentName || !newLeave.startDate || !newLeave.reason) {
+      return res.status(400).json({ error: 'Missing required fields: studentName, startDate, reason' });
+    }
+
+    // Sanitize id for mongo
     if (newLeave.id) {
-       newLeave._id = newLeave.id; // Or let Mongo generate it, but frontend relies on `id` string
-       // delete newLeave.id; // Keep it if frontend wants the same format
+       newLeave._id = newLeave.id;
     } else {
        newLeave.id = 'leave_' + new ObjectId().toString();
        newLeave._id = newLeave.id;
@@ -306,11 +311,20 @@ app.post('/api/opas/leaves', async (req, res) => {
 app.put('/api/opas/leaves/:id', async (req, res) => {
   try {
     const { status, approvals } = req.body;
-    const result = await leavesCollection.findOneAndUpdate(
+    // Search by both 'id' field and '_id' field for reliable matching
+    let result = await leavesCollection.findOneAndUpdate(
       { id: req.params.id },
       { $set: { status, approvals } },
       { returnDocument: 'after' }
     );
+    if (!result) {
+      // Fallback: try matching by _id
+      result = await leavesCollection.findOneAndUpdate(
+        { _id: req.params.id },
+        { $set: { status, approvals } },
+        { returnDocument: 'after' }
+      );
+    }
     if (!result) return res.status(404).json({ error: 'Leave not found' });
     
     console.log(`✅ Leave ${req.params.id} updated to status: ${status}`);
