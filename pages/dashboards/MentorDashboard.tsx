@@ -53,7 +53,7 @@ const MentorDashboard: React.FC = () => {
 
   const allTasks = MOCK_TASKS.filter(t => String(t.assignedBy) === String(user.id));
   // In Demo Mode, allow the Mentor to see ALL pending mentor leaves to reduce testing friction
-  const leaveQueue = allLeaves.filter(lr => lr.status === 'Pending');
+  const leaveQueue = allLeaves.filter(lr => lr.status === 'Pending' && !lr.approvals?.some((a: any) => a.role === 'FACULTY'));
   
   const pipelineQueue: any[] = []; // Removed for simple workflow
   const analysis = MOCK_MENTOR_ANALYSIS;

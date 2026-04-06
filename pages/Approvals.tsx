@@ -73,8 +73,14 @@ const Approvals: React.FC = () => {
     if (!approved) {
       newStatus = 'Rejected' as any;
     } else {
-      newStatus = 'Approved' as any;
       newApprovals = [...newApprovals, { role, timestamp: new Date().toISOString(), approved: true }];
+      
+      const hasParent = newApprovals.some(a => a.role === UserRole.PARENT);
+      const hasFaculty = newApprovals.some(a => a.role === UserRole.FACULTY);
+      
+      if (hasParent && hasFaculty) {
+         newStatus = 'Approved' as any;
+      }
     }
 
     // Optimistic UI update
@@ -118,7 +124,8 @@ const Approvals: React.FC = () => {
     if (!isMyStudent) return false;
 
     // 2. Status check
-    return req.status === 'Pending';
+    const alreadyApproved = req.approvals?.some((a: any) => a.role === user?.roles[0]);
+    return req.status === 'Pending' && !alreadyApproved;
   });
 
   return (
