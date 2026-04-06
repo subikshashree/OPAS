@@ -13,6 +13,8 @@ const API_BASE = import.meta.env.VITE_API_URL || '/api/opas';
 const Login: React.FC = () => {
   const [userId, setUserId] = useState('');
   const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
+  const [isRegistering, setIsRegistering] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
@@ -50,8 +52,12 @@ const Login: React.FC = () => {
     const normalizedId = userId.trim().toLowerCase();
 
     // ─── 1. Attempt Cloud Auth ───────────────────
-    const bUser = await loginViaBackend(normalizedId, '', '');
+    const bUser = await loginViaBackend(normalizedId, isRegistering ? name : '', '');
     if (bUser) {
+      if (isRegistering) {
+          // If we registered, backend might set the password differently or not use it. 
+          // For now, it logs them in properly.
+      }
       login(bUser);
       navigate('/');
       return;
@@ -174,11 +180,44 @@ const Login: React.FC = () => {
           </div>
 
           <form onSubmit={handleLogin} className="space-y-4 text-left mb-6">
+            
+            {/* Toggle Login/Register */}
+            <div className="flex bg-white/40 p-1 rounded-2xl mb-6">
+              <button 
+                type="button"
+                onClick={() => { setIsRegistering(false); setError(''); }}
+                className={`flex-1 py-1.5 text-xs font-bold uppercase rounded-xl transition-all ${!isRegistering ? 'bg-white shadow-sm text-indigo-700' : 'text-slate-500 hover:text-slate-700'}`}
+              >
+                Sign In
+              </button>
+              <button 
+                type="button"
+                onClick={() => { setIsRegistering(true); setError(''); }}
+                className={`flex-1 py-1.5 text-xs font-bold uppercase rounded-xl transition-all ${isRegistering ? 'bg-white shadow-sm text-emerald-700' : 'text-slate-500 hover:text-slate-700'}`}
+              >
+                Quick Register
+              </button>
+            </div>
+
+            {isRegistering && (
+              <div className="space-y-2 animate-in fade-in zoom-in-95 duration-300">
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-2">Full Name</label>
+                <GlassInput
+                  type="text"
+                  placeholder="e.g. Test User"
+                  icon={<span>📝</span>}
+                  required={isRegistering}
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                />
+              </div>
+            )}
+
             <div className="space-y-2">
               <label className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-2">System Identity</label>
               <GlassInput
                 type="text"
-                placeholder="e.g. student@opas.edu or 108422"
+                placeholder={isRegistering ? "e.g. user_test@123" : "e.g. student@opas.edu or 108422"}
                 icon={<span>👤</span>}
                 required
                 value={userId}
@@ -206,7 +245,7 @@ const Login: React.FC = () => {
 
             <GlassButton 
               type="submit"
-              variant="primary"
+              variant={isRegistering ? "success" : "primary"}
               size="lg"
               className="w-full mt-2"
               disabled={isLoading || isGoogleLoading}
@@ -216,7 +255,7 @@ const Login: React.FC = () => {
                   <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mr-3"></span>
                   Connecting to Cloud...
                 </>
-              ) : 'Access Terminal'}
+              ) : (isRegistering ? 'Create User & Access Terminal' : 'Access Terminal')}
             </GlassButton>
           </form>
 

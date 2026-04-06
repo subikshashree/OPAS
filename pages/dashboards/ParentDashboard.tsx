@@ -5,6 +5,7 @@ import { UserRole, LeaveRequest } from '../../types';
 import { MOCK_USERS_LIST, MOCK_ATTENDANCE, MOCK_PLACEMENT } from '../../constants';
 import { GlassCard, GlassButton, GlassBadge, FloatingSphere } from '../../components/ui';
 import { useToast } from '../../hooks/useToast';
+import { getNextPendingStatus } from '../../hooks/useLeaveWorkflow';
 
 const ParentDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -14,24 +15,45 @@ const ParentDashboard: React.FC = () => {
   
   const activeTab = tab || 'ward';
   const [allLeaves, setAllLeaves] = useState<LeaveRequest[]>([]);
+  const [allUsers, setAllUsers] = useState<any[]>(MOCK_USERS_LIST);
   const [refresh, setRefresh] = useState(0);
 
   useEffect(() => {
-    const saved = JSON.parse(localStorage.getItem('opas_my_leaves') || '[]');
-    setAllLeaves(saved);
+    const API_BASE = import.meta.env.VITE_API_URL || '/api/opas';
+
+    // Fetch leaves from cloud
+    fetch(`${API_BASE}/leaves`)
+      .then(r => r.json())
+      .then(data => {
+        if (Array.isArray(data)) setAllLeaves(data);
+      })
+      .catch(() => {
+        const saved = JSON.parse(localStorage.getItem('opas_global_leaves') || '[]');
+        setAllLeaves(saved);
+      });
+
+    // Try fetching from backend to get live students
+    fetch(`${API_BASE}/users`).then(r => r.json()).then(data => {
+      if (Array.isArray(data)) setAllUsers(data);
+    }).catch(() => {
+      const local = JSON.parse(localStorage.getItem('opas_users') || '[]');
+      setAllUsers([...MOCK_USERS_LIST, ...local]);
+    });
 
     const handleStorage = () => setRefresh(prev => prev + 1);
     window.addEventListener('storage', handleStorage);
     return () => window.removeEventListener('storage', handleStorage);
-  }, []);
+  }, [refresh]);
 
   if (!user) return null;
 
-  const ward = MOCK_USERS_LIST.find(u => u.id === user.wardId);
-  const mentor = ward ? MOCK_USERS_LIST.find(u => u.id === ward.mentorId) : null;
+  const ward = allUsers.find(u => String(u.id) === String(user.wardId) || String(u.parentId) === String(user.id));
+  const mentor = ward ? allUsers.find(u => String(u.id) === String(ward.mentorId)) : null;
   const attendance = ward ? (MOCK_ATTENDANCE[ward.id] || []) : [];
   const placement = ward ? MOCK_PLACEMENT[ward.id] : null;
-  const leaveQueue = allLeaves.filter(lr => lr.status === 'PENDING_PARENT' && lr.studentName === ward?.name);
+
+  // In Demo Mode, allow the Parent to see ALL pending parent leaves so they can test easily
+  const leaveQueue = allLeaves.filter(lr => lr.status === 'PENDING_PARENT');
 
   const totalDays = attendance.length;
   const presentDays = attendance.filter(a => a.status === 'PRESENT').length;
@@ -48,15 +70,19 @@ const ParentDashboard: React.FC = () => {
   const handleAction = (id: string, approved: boolean) => {
     const updated = allLeaves.map(lr => {
       if (lr.id === id) {
+        if (!approved) return { ...lr, status: 'REJECTED' as const };
+        const newStatus = getNextPendingStatus(lr.type, lr.isHosteler || false, (lr.approvals?.length || 0) + 1);
         return {
           ...lr,
-          status: approved ? (ward?.isHosteler ? 'PENDING_WARDEN' : 'PENDING_MENTOR') : 'REJECTED'
+          status: newStatus,
+          approvals: [...(lr.approvals || []), { role: UserRole.PARENT, timestamp: new Date().toISOString(), approved: true }]
         };
       }
       return lr;
     });
     setAllLeaves(updated);
-    localStorage.setItem('opas_my_leaves', JSON.stringify(updated));
+    localStorage.setItem('opas_global_leaves', JSON.stringify(updated.filter(r => !String(r.id).startsWith('req'))));
+    window.dispatchEvent(new Event('storage'));
     showToast(approved ? 'Leave application authorized successfully!' : 'Leave application rejected!', approved ? 'success' : 'error');
   };
 

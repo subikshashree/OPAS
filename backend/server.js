@@ -19,6 +19,7 @@ const DB_NAME = process.env.DB_NAME || 'opas_db';
 
 let db;
 let usersCollection;
+let leavesCollection;
 
 async function connectDB() {
   try {
@@ -26,6 +27,7 @@ async function connectDB() {
     await client.connect();
     db = client.db(DB_NAME);
     usersCollection = db.collection('users');
+    leavesCollection = db.collection('leaves');
     
     // Create unique index on email
     await usersCollection.createIndex({ email: 1 }, { unique: true });
@@ -264,6 +266,60 @@ function formatUser(user) {
     hostelName: user.hostelName || null,
   };
 }
+
+// ─── LEAVES API ──────────────────────────────────────────────────
+
+// GET ALL LEAVES
+app.get('/api/opas/leaves', async (req, res) => {
+  try {
+    const leaves = await leavesCollection.find({}).sort({ appliedAt: -1 }).toArray();
+    res.json(leaves);
+  } catch (err) {
+    console.error('Get leaves error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// CREATE NEW LEAVE
+app.post('/api/opas/leaves', async (req, res) => {
+  try {
+    const newLeave = req.body;
+    // We expect the frontend to pass the leave object. Just ensure we sanitize id for mongo.
+    if (newLeave.id) {
+       newLeave._id = newLeave.id; // Or let Mongo generate it, but frontend relies on `id` string
+       // delete newLeave.id; // Keep it if frontend wants the same format
+    } else {
+       newLeave.id = 'leave_' + new ObjectId().toString();
+       newLeave._id = newLeave.id;
+    }
+    
+    await leavesCollection.insertOne(newLeave);
+    console.log(`📝 New Leave Application created for student: ${newLeave.studentId}`);
+    res.json(newLeave);
+  } catch (err) {
+    console.error('Create leave error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// UPDATE LEAVE (Approvals)
+app.put('/api/opas/leaves/:id', async (req, res) => {
+  try {
+    const { status, approvals } = req.body;
+    const result = await leavesCollection.findOneAndUpdate(
+      { id: req.params.id },
+      { $set: { status, approvals } },
+      { returnDocument: 'after' }
+    );
+    if (!result) return res.status(404).json({ error: 'Leave not found' });
+    
+    console.log(`✅ Leave ${req.params.id} updated to status: ${status}`);
+    res.json(result);
+  } catch (err) {
+    console.error('Update leave error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
 
 // ─── START SERVER ───────────────────────────────────────────────
 connectDB().then(() => {

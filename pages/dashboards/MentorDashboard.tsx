@@ -5,6 +5,7 @@ import { UserRole, LeaveRequest } from '../../types';
 import { MOCK_USERS_LIST, MOCK_MENTOR_ANALYSIS, MOCK_TASKS } from '../../constants';
 import { GlassCard, GlassButton, GlassBadge, FloatingSphere } from '../../components/ui';
 import { useToast } from '../../hooks/useToast';
+import { getNextPendingStatus } from '../../hooks/useLeaveWorkflow';
 
 const MentorDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -14,25 +15,51 @@ const MentorDashboard: React.FC = () => {
   
   const activeTab = tab || 'mentees';
   const [allLeaves, setAllLeaves] = useState<LeaveRequest[]>([]);
+  const [allUsers, setAllUsers] = useState<any[]>(MOCK_USERS_LIST);
   const [refresh, setRefresh] = useState(0);
 
   useEffect(() => {
-    const saved = JSON.parse(localStorage.getItem('opas_my_leaves') || '[]');
-    setAllLeaves(saved);
+    const API_BASE = import.meta.env.VITE_API_URL || '/api/opas';
+
+    // Fetch leaves from cloud
+    fetch(`${API_BASE}/leaves`)
+      .then(r => r.json())
+      .then(data => {
+        if (Array.isArray(data)) setAllLeaves(data);
+      })
+      .catch(() => {
+        const saved = JSON.parse(localStorage.getItem('opas_global_leaves') || '[]');
+        setAllLeaves(saved);
+      });
+
+    // Try fetching from backend to get live students
+    fetch(`${API_BASE}/users`).then(r => r.json()).then(data => {
+      if (Array.isArray(data)) setAllUsers(data);
+    }).catch(() => {
+      const local = JSON.parse(localStorage.getItem('opas_users') || '[]');
+      setAllUsers([...MOCK_USERS_LIST, ...local]);
+    });
 
     const handleStorage = () => setRefresh(prev => prev + 1);
     window.addEventListener('storage', handleStorage);
     return () => window.removeEventListener('storage', handleStorage);
-  }, []);
+  }, [refresh]);
 
   if (!user) return null;
 
-  const mentees = MOCK_USERS_LIST.filter(u => u.roles.includes(UserRole.STUDENT) && u.mentorId === user.id);
+  const mentees = allUsers.filter(u => u.roles.includes(UserRole.STUDENT) && (String(u.mentorId) === String(user.id) || user.menteeIds?.includes(u.id)));
   // Find all parents connected to those mentees
-  const parents = MOCK_USERS_LIST.filter(u => mentees.some(m => m.id === u.wardId) && u.roles.includes(UserRole.PARENT));
+  const parents = allUsers.filter(u => mentees.some(m => String(m.id) === String(u.wardId)) && u.roles.includes(UserRole.PARENT));
 
-  const allTasks = MOCK_TASKS.filter(t => t.assignedBy === user.id);
+  const allTasks = MOCK_TASKS.filter(t => String(t.assignedBy) === String(user.id));
+  // In Demo Mode, allow the Mentor to see ALL pending mentor leaves to reduce testing friction
   const leaveQueue = allLeaves.filter(lr => lr.status === 'PENDING_MENTOR');
+  
+  const pipelineQueue = allLeaves.filter(lr => 
+    lr.status !== 'PENDING_MENTOR' && 
+    lr.status !== 'APPROVED' &&
+    lr.status !== 'REJECTED'
+  );
   const analysis = MOCK_MENTOR_ANALYSIS;
 
   const pendingTasks = allTasks.filter(t => t.status === 'PENDING').length;
@@ -41,15 +68,19 @@ const MentorDashboard: React.FC = () => {
   const handleAction = (id: string, approved: boolean) => {
     const updated = allLeaves.map(lr => {
       if (lr.id === id) {
+        if (!approved) return { ...lr, status: 'REJECTED' as const };
+        const newStatus = getNextPendingStatus(lr.type, lr.isHosteler || false, (lr.approvals?.length || 0) + 1);
         return {
           ...lr,
-          status: approved ? (lr.type === 'OD' ? 'PENDING_HOD' : 'APPROVED') : 'REJECTED'
+          status: newStatus,
+          approvals: [...(lr.approvals || []), { role: UserRole.FACULTY, timestamp: new Date().toISOString(), approved: true }]
         };
       }
       return lr;
     });
     setAllLeaves(updated);
-    localStorage.setItem('opas_my_leaves', JSON.stringify(updated));
+    localStorage.setItem('opas_global_leaves', JSON.stringify(updated.filter(r => !String(r.id).startsWith('req'))));
+    window.dispatchEvent(new Event('storage'));
     showToast(approved ? 'Leave application approved!' : 'Leave application rejected!', approved ? 'success' : 'error');
   };
 

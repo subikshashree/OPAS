@@ -3,6 +3,7 @@ import { useAuth } from '../App';
 import { UserRole, LeaveRequest } from '../types';
 import { GlassCard, GlassButton, GlassBadge, FloatingSphere } from '../components/ui';
 import { useToast } from '../hooks/useToast';
+import { canUserApprove, getNextPendingStatus } from '../hooks/useLeaveWorkflow';
 
 const MOCK_REQUESTS: LeaveRequest[] = [
   {
@@ -42,20 +43,81 @@ const MOCK_REQUESTS: LeaveRequest[] = [
 
 const Approvals: React.FC = () => {
   const { user } = useAuth();
-  const [requests, setRequests] = useState<LeaveRequest[]>(MOCK_REQUESTS);
+  const [requests, setRequests] = useState<LeaveRequest[]>([]);
   const { showToast, ToastComponent } = useToast();
+  const API_BASE = import.meta.env.VITE_API_URL || '/api/opas';
 
-  const handleAction = (id: string, approved: boolean) => {
-    setRequests(prev => prev.filter(r => r.id !== id));
+  React.useEffect(() => {
+    fetch(`${API_BASE}/leaves`)
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          setRequests([...data, ...MOCK_REQUESTS.filter(m => !data.some(d => d.id === m.id))]);
+        }
+      })
+      .catch(err => {
+        console.error('Fetch leaves error', err);
+        const globalLeaves = JSON.parse(localStorage.getItem('opas_global_leaves') || '[]');
+        setRequests([...globalLeaves, ...MOCK_REQUESTS]);
+      });
+  }, [API_BASE]);
+
+  const handleAction = async (id: string, approved: boolean) => {
+    const reqToUpdate = requests.find(r => r.id === id);
+    if (!reqToUpdate) return;
+
+    let newStatus = reqToUpdate.status;
+    let newApprovals = reqToUpdate.approvals || [];
+
+    if (!approved) {
+      newStatus = 'REJECTED' as const;
+    } else {
+      newStatus = getNextPendingStatus(reqToUpdate.type, reqToUpdate.isHosteler || false, newApprovals.length + 1);
+      newApprovals = [...newApprovals, { role: user?.roles[0] || UserRole.ADMIN, timestamp: new Date().toISOString(), approved: true }];
+    }
+
+    // Optimistic UI update
+    setRequests(prev => prev.map(r => r.id === id ? { ...r, status: newStatus, approvals: newApprovals } : r));
+
+    try {
+      const res = await fetch(`${API_BASE}/leaves/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus, approvals: newApprovals })
+      });
+    } catch (e) {
+      console.warn('Cloud update failed, updating local storage fallback.');
+    }
+
+    const updatedRequests = requests.map(r => r.id === id ? { ...r, status: newStatus, approvals: newApprovals } : r);
+    localStorage.setItem('opas_global_leaves', JSON.stringify(updatedRequests.filter(r => String(r.id).startsWith('leave'))));
+    
     showToast(`Request ${approved ? 'Authorized' : 'Terminated'} successfully! Workflow updated.`, approved ? 'success' : 'error');
   };
 
   const filteredRequests = requests.filter(req => {
-    if (user?.roles.includes(UserRole.PARENT)) return true;
-    if (user?.roles.includes(UserRole.FACULTY)) return req.status === 'PENDING' || req.status === 'PARENT_APPROVED';
-    if (user?.roles.includes(UserRole.WARDEN)) return req.type === 'SICK' || req.type === 'REGULAR';
-    if (user?.roles.includes(UserRole.HOD)) return req.type === 'OD' && req.status === 'MENTOR_APPROVED';
-    return true;
+    // 1. Relationship check
+    const isMyStudent = (() => {
+      if (!user) return false;
+      const rUserId = String((req as any).userId);
+      const rStudentId = String(req.studentId);
+      
+      if (user.roles.includes(UserRole.PARENT)) {
+        return true; // Demo mode: let any parent test approval flows
+      }
+      if (user.roles.includes(UserRole.FACULTY)) {
+        return true; // Demo mode
+      }
+      if (user.roles.includes(UserRole.WARDEN)) {
+        return true; // Demo mode
+      }
+      return true; // HOD and Admin see everything filtered by status
+    })();
+
+    if (!isMyStudent) return false;
+
+    // 2. Workflow Status check
+    return user?.roles.some(role => canUserApprove(role, req.status as any));
   });
 
   return (

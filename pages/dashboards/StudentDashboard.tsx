@@ -23,9 +23,21 @@ const StudentDashboard: React.FC = () => {
   const API_BASE = import.meta.env.VITE_API_URL || '/api/opas';
 
   useEffect(() => {
-    const saved = JSON.parse(localStorage.getItem('opas_my_leaves') || '[]');
-    setMyLeaves(saved);
-  }, []);
+    if (!user) return;
+    const API_BASE = import.meta.env.VITE_API_URL || '/api/opas';
+    fetch(`${API_BASE}/leaves`)
+      .then(r => r.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+           // Filter only the student's own leaves
+           setMyLeaves(data.filter((l: any) => l.userId === user.id || l.studentId === user.studentId || l.studentId === user.id));
+        }
+      })
+      .catch(() => {
+        const saved = JSON.parse(localStorage.getItem('opas_my_leaves') || '[]');
+        setMyLeaves(saved);
+      });
+  }, [user]);
 
   useEffect(() => {
     if (!user) return;
