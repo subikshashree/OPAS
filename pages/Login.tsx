@@ -13,8 +13,6 @@ const API_BASE = import.meta.env.VITE_API_URL || '/api/opas';
 const Login: React.FC = () => {
   const [userId, setUserId] = useState('');
   const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
-  const [isRegistering, setIsRegistering] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
@@ -52,12 +50,8 @@ const Login: React.FC = () => {
     const normalizedId = userId.trim().toLowerCase();
 
     // ─── 1. Attempt Cloud Auth ───────────────────
-    const bUser = await loginViaBackend(normalizedId, isRegistering ? name : '', '');
+    const bUser = await loginViaBackend(normalizedId, '', '');
     if (bUser) {
-      if (isRegistering) {
-          // If we registered, backend might set the password differently or not use it. 
-          // For now, it logs them in properly.
-      }
       login(bUser);
       navigate('/');
       return;
@@ -92,7 +86,7 @@ const Login: React.FC = () => {
         login(foundUser);
         navigate('/');
       } else {
-        setError('Invalid credentials. Use a role shortcode or register with a new email.');
+        setError('Invalid credentials. If you are new, try Continue with Google.');
         setIsLoading(false);
       }
     }, 800);
@@ -181,43 +175,11 @@ const Login: React.FC = () => {
 
           <form onSubmit={handleLogin} className="space-y-4 text-left mb-6">
             
-            {/* Toggle Login/Register */}
-            <div className="flex bg-white/40 p-1 rounded-2xl mb-6">
-              <button 
-                type="button"
-                onClick={() => { setIsRegistering(false); setError(''); }}
-                className={`flex-1 py-1.5 text-xs font-bold uppercase rounded-xl transition-all ${!isRegistering ? 'bg-white shadow-sm text-indigo-700' : 'text-slate-500 hover:text-slate-700'}`}
-              >
-                Sign In
-              </button>
-              <button 
-                type="button"
-                onClick={() => { setIsRegistering(true); setError(''); }}
-                className={`flex-1 py-1.5 text-xs font-bold uppercase rounded-xl transition-all ${isRegistering ? 'bg-white shadow-sm text-emerald-700' : 'text-slate-500 hover:text-slate-700'}`}
-              >
-                Quick Register
-              </button>
-            </div>
-
-            {isRegistering && (
-              <div className="space-y-2 animate-in fade-in zoom-in-95 duration-300">
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-2">Full Name</label>
-                <GlassInput
-                  type="text"
-                  placeholder="e.g. Test User"
-                  icon={<span>📝</span>}
-                  required={isRegistering}
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                />
-              </div>
-            )}
-
             <div className="space-y-2">
               <label className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-2">System Identity</label>
               <GlassInput
                 type="text"
-                placeholder={isRegistering ? "e.g. user_test@123" : "e.g. student@opas.edu or 108422"}
+                placeholder="e.g. student@opas.edu or 108422"
                 icon={<span>👤</span>}
                 required
                 value={userId}
@@ -245,7 +207,7 @@ const Login: React.FC = () => {
 
             <GlassButton 
               type="submit"
-              variant={isRegistering ? "success" : "primary"}
+              variant="primary"
               size="lg"
               className="w-full mt-2"
               disabled={isLoading || isGoogleLoading}
@@ -253,9 +215,9 @@ const Login: React.FC = () => {
               {isLoading ? (
                 <>
                   <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mr-3"></span>
-                  Connecting to Cloud...
+                  Connecting...
                 </>
-              ) : (isRegistering ? 'Create User & Access Terminal' : 'Access Terminal')}
+              ) : 'Sign in'}
             </GlassButton>
           </form>
 
@@ -278,7 +240,7 @@ const Login: React.FC = () => {
             ) : (
                <svg className="w-5 h-5 mr-3" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g clipPath="url(#clip0_32_4705)"><path d="M23.7659 12.2741C23.7659 11.4601 23.6999 10.6391 23.5579 9.83911H12.2399V14.4581H18.7209C18.4379 15.9381 17.5879 17.2681 16.3269 18.1041V21.0961H20.1899C22.4609 19.0061 23.7659 15.9261 23.7659 12.2741Z" fill="#4285F4"/><path d="M12.2403 23.9998C15.4853 23.9998 18.2083 22.9378 20.1903 21.0958L16.3273 18.1038C15.2533 18.8328 13.8633 19.2518 12.2403 19.2518C9.11234 19.2518 6.45834 17.1398 5.50634 14.3008H1.51538V17.3918C3.55238 21.4428 7.69734 23.9998 12.2403 23.9998Z" fill="#34A853"/><path d="M5.50153 14.2996C5.00853 12.8256 5.00853 11.1736 5.50153 9.69961V6.60861H1.51553C-0.186469 10.0046 -0.186469 13.9946 1.51553 17.3906L5.50153 14.2996Z" fill="#FBBC05"/><path d="M12.2403 4.74766C13.9573 4.72266 15.6023 5.36566 16.8423 6.54766L20.2683 3.12166C18.1013 1.08266 15.2213 -0.0353412 12.2403 0.000658826C7.69734 0.000658826 3.55238 2.55666 1.51538 6.60766L5.50038 9.69866C6.45138 6.85266 9.10834 4.74766 12.2403 4.74766Z" fill="#EA4335"/></g><defs><clipPath id="clip0_32_4705"><rect width="24" height="24" fill="white"/></clipPath></defs></svg>
             )}
-            Sign in with Google
+            Continue with Google
           </GlassButton>
 
           <div className="mt-8 grid grid-cols-3 gap-2 text-center text-[10px] font-bold uppercase tracking-tighter">
