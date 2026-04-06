@@ -17,9 +17,9 @@ const MentorDashboard: React.FC = () => {
   const [allLeaves, setAllLeaves] = useState<LeaveRequest[]>([]);
   const [allUsers, setAllUsers] = useState<any[]>(MOCK_USERS_LIST);
   const [refresh, setRefresh] = useState(0);
+  const API_BASE = import.meta.env.VITE_API_URL || '/api/opas';
 
   useEffect(() => {
-    const API_BASE = import.meta.env.VITE_API_URL || '/api/opas';
 
     // Fetch leaves from cloud
     fetch(`${API_BASE}/leaves`)
@@ -61,22 +61,27 @@ const MentorDashboard: React.FC = () => {
   const pendingTasks = allTasks.filter(t => t.status === 'PENDING').length;
   const completedTasks = allTasks.filter(t => t.status === 'COMPLETED').length;
 
-  const handleAction = (id: string, approved: boolean) => {
-    const updated = allLeaves.map(lr => {
-      if (lr.id === id) {
-        if (!approved) return { ...lr, status: 'REJECTED' as const };
-        const newStatus = getNextPendingStatus(lr.type, lr.isHosteler || false, (lr.approvals?.length || 0) + 1);
-        return {
-          ...lr,
-          status: newStatus,
-          approvals: [...(lr.approvals || []), { role: UserRole.FACULTY, timestamp: new Date().toISOString(), approved: true }]
-        };
-      }
-      return lr;
-    });
-    setAllLeaves(updated);
-    localStorage.setItem('opas_global_leaves', JSON.stringify(updated.filter(r => !String(r.id).startsWith('req'))));
-    window.dispatchEvent(new Event('storage'));
+  const handleAction = async (id: string, approved: boolean) => {
+    const req = allLeaves.find(lr => lr.id === id);
+    if (!req) return;
+    let newStatus = req.status;
+    let newApprovals = req.approvals || [];
+    if (!approved) {
+      newStatus = 'Rejected';
+    } else {
+      newApprovals = [...newApprovals, { role: UserRole.FACULTY, timestamp: new Date().toISOString(), approved: true }];
+      const hasParent = newApprovals.some((a: any) => a.role === UserRole.PARENT);
+      const hasFaculty = newApprovals.some((a: any) => a.role === UserRole.FACULTY);
+      const hasWarden = newApprovals.some((a: any) => a.role === UserRole.WARDEN);
+      if (hasParent && hasFaculty && hasWarden) newStatus = 'Approved';
+    }
+    setAllLeaves(prev => prev.map(lr => lr.id === id ? { ...lr, status: newStatus, approvals: newApprovals } : lr));
+    try {
+      await fetch(`${API_BASE}/leaves/${id}`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus, approvals: newApprovals })
+      });
+    } catch (e) { console.warn('Cloud update failed'); }
     showToast(approved ? 'Leave application approved!' : 'Leave application rejected!', approved ? 'success' : 'error');
   };
 
