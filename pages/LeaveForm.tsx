@@ -175,7 +175,7 @@ const LeaveForm: React.FC = () => {
             variant="primary"
             size="lg"
             className="w-full mt-4"
-            disabled={isSubmitting || (formData.type === 'SICK' && !isHosteler)}
+            disabled={isSubmitting}
           >
             {isSubmitting ? 'Submitting...' : 'Submit Application'}
           </GlassButton>
