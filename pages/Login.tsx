@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../App';
 import { MOCK_USERS_LIST } from '../constants';
 import { UserRole, User } from '../types';
-import { GlassCard, GlassButton, GlassInput, FloatingSphere } from '../components/ui';
+import { GlassCard, GlassInput, FloatingSphere } from '../components/ui';
 
 import { useGoogleLogin } from '@react-oauth/google';
 
@@ -13,15 +13,15 @@ const API_BASE = import.meta.env.VITE_API_URL || '/api/opas';
 const Login: React.FC = () => {
   const [userId, setUserId] = useState('');
   const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  /**
-   * Attempt to log in via our new MongoDB Atlas/Node.js backend first.
-   */
   const loginViaBackend = async (email: string, name: string, avatar: string): Promise<User | null> => {
     try {
       const res = await fetch(`${API_BASE}/auth/login`, {
@@ -29,10 +29,8 @@ const Login: React.FC = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, name, avatar }),
       });
-      
       if (res.ok) {
         const data = await res.json();
-        // Backend returns user in the shape defined in server.js formatUser()
         return data as User;
       }
       return null;
@@ -42,14 +40,31 @@ const Login: React.FC = () => {
     }
   };
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
 
     const normalizedId = userId.trim().toLowerCase();
 
-    // ─── 1. Attempt Cloud Auth ───────────────────
+    if (isSignUp) {
+      if (!name.trim()) {
+        setError('Please enter your full name.');
+        setIsLoading(false);
+        return;
+      }
+      const bUser = await loginViaBackend(normalizedId, name.trim(), '');
+      if (bUser) {
+        login(bUser);
+        navigate('/');
+        return;
+      }
+      setError('Registration failed. Please try Continue with Google.');
+      setIsLoading(false);
+      return;
+    }
+
+    // Sign In: Attempt Cloud Auth
     const bUser = await loginViaBackend(normalizedId, '', '');
     if (bUser) {
       login(bUser);
@@ -57,12 +72,11 @@ const Login: React.FC = () => {
       return;
     }
 
-    // ─── 2. Fallback to Local Storage/Shortcodes ─────────────────────
+    // Fallback to Local Storage/Shortcodes
     setTimeout(() => {
       let foundUser = null;
       const allUsers = JSON.parse(localStorage.getItem('opas_users') || JSON.stringify(MOCK_USERS_LIST));
 
-      // Handle role-based testing shortcodes
       const shortcodeRoleMap: Record<string, UserRole> = {
         'student': UserRole.STUDENT,
         'mentor': UserRole.FACULTY,
@@ -86,7 +100,7 @@ const Login: React.FC = () => {
         login(foundUser);
         navigate('/');
       } else {
-        setError('Invalid credentials. If you are new, try Continue with Google.');
+        setError('Invalid credentials. Please check your email and password.');
         setIsLoading(false);
       }
     }, 800);
@@ -103,7 +117,6 @@ const Login: React.FC = () => {
         const googleUser = await res.json();
         
         if (googleUser.email) {
-          // --- Always sync with cloud backend (MongoDB) ---
           const bUser = await loginViaBackend(
             googleUser.email,
             googleUser.name || 'New User',
@@ -114,7 +127,6 @@ const Login: React.FC = () => {
             login(bUser);
             navigate('/');
           } else {
-            // Fallback to localStorage logic if server is offline
             const allUsers = JSON.parse(localStorage.getItem('opas_users') || JSON.stringify(MOCK_USERS_LIST));
             const foundUser = allUsers.find((u: any) => u.email.toLowerCase() === googleUser.email.toLowerCase());
             if (foundUser) {
@@ -162,92 +174,151 @@ const Login: React.FC = () => {
 
       <div className="w-full max-w-md p-6 relative z-10 animate-in zoom-in-95 duration-700">
         <GlassCard variant="light" className="p-8 md:p-10 text-center relative overflow-visible">
-          <div className="flex justify-center mb-6">
-            <div className="w-20 h-20 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-[1.5rem] flex items-center justify-center text-white text-4xl font-black shadow-[0_10px_30px_rgba(99,102,241,0.4)] border-4 border-[#f4f3ef]/50 backdrop-blur-md">
-              O
-            </div>
-          </div>
           
-          <div className="mb-6">
-            <h1 className="text-3xl font-extrabold tracking-tight text-slate-800">OPAS Workspace</h1>
-            <p className="text-sm text-slate-500 font-medium mt-2">Premium Operating Interface (Cloud Backend Connected)</p>
+          {/* Header */}
+          <h1 className="text-4xl font-black tracking-tight text-slate-800 mb-1">Hello!</h1>
+          <p className="text-sm text-slate-500 font-medium mb-8">Sign in to your account</p>
+
+          {/* Sign In / Sign Up Toggle */}
+          <div className="flex bg-slate-100/60 p-1.5 rounded-2xl mb-8 border border-slate-200/50">
+            <button 
+              type="button"
+              onClick={() => { setIsSignUp(false); setError(''); }}
+              className={`flex-1 py-2.5 text-sm font-bold rounded-xl transition-all duration-300 ${
+                !isSignUp 
+                  ? 'bg-white shadow-md text-slate-800' 
+                  : 'text-slate-400 hover:text-slate-600'
+              }`}
+            >
+              Sign In
+            </button>
+            <button 
+              type="button"
+              onClick={() => { setIsSignUp(true); setError(''); }}
+              className={`flex-1 py-2.5 text-sm font-bold rounded-xl transition-all duration-300 ${
+                isSignUp 
+                  ? 'bg-white shadow-md text-slate-800' 
+                  : 'text-slate-400 hover:text-slate-600'
+              }`}
+            >
+              Sign Up
+            </button>
           </div>
 
-          <form onSubmit={handleLogin} className="space-y-4 text-left mb-6">
+          <form onSubmit={handleSubmit} className="space-y-5 text-left">
             
+            {/* Full Name (Sign Up only) */}
+            {isSignUp && (
+              <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                <label className="text-sm font-semibold text-slate-700 pl-1">Full Name</label>
+                <GlassInput
+                  type="text"
+                  placeholder="Your full name"
+                  required={isSignUp}
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                />
+              </div>
+            )}
+
+            {/* Email Address */}
             <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-2">System Identity</label>
+              <label className="text-sm font-semibold text-slate-700 pl-1">Email Address</label>
               <GlassInput
                 type="text"
-                placeholder="e.g. student@opas.edu or 108422"
-                icon={<span>👤</span>}
+                placeholder="email@mail.com"
                 required
                 value={userId}
                 onChange={(e) => setUserId(e.target.value)}
               />
             </div>
 
+            {/* Password */}
             <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-2">Security Code</label>
+              <label className="text-sm font-semibold text-slate-700 pl-1">Password</label>
               <GlassInput
                 type="password"
-                placeholder="••••••••"
-                icon={<span>🔒</span>}
+                placeholder="Your password"
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
             </div>
 
+            {/* Remember Me + Forgot Password */}
+            {!isSignUp && (
+              <div className="flex items-center justify-between">
+                <label className="flex items-center gap-2 cursor-pointer group">
+                  <input 
+                    type="checkbox" 
+                    checked={rememberMe} 
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500/50 cursor-pointer"
+                  />
+                  <span className="text-sm text-slate-600 group-hover:text-slate-800 transition-colors">Remember me</span>
+                </label>
+                <button type="button" className="text-sm font-semibold text-indigo-600 hover:text-indigo-800 transition-colors">
+                  Forgot password?
+                </button>
+              </div>
+            )}
+
+            {/* Error Message */}
             {error && (
               <div className="bg-red-500/10 text-rose-600 p-3 rounded-xl text-xs font-bold border border-red-500/20 backdrop-blur-md animate-shake">
                 {error}
               </div>
             )}
 
-            <GlassButton 
+            {/* Login / Sign Up Button */}
+            <button 
               type="submit"
-              variant="primary"
-              size="lg"
-              className="w-full mt-2"
               disabled={isLoading || isGoogleLoading}
+              className="w-full py-3.5 rounded-2xl text-white font-bold text-base bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 shadow-[0_8px_24px_rgba(99,102,241,0.35)] hover:shadow-[0_12px_30px_rgba(99,102,241,0.45)] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]"
             >
               {isLoading ? (
-                <>
+                <span className="flex items-center justify-center">
                   <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mr-3"></span>
                   Connecting...
-                </>
-              ) : 'Sign in'}
-            </GlassButton>
+                </span>
+              ) : (isSignUp ? 'Sign Up' : 'Login')}
+            </button>
           </form>
 
-          <div className="relative flex py-2 items-center mb-6">
-            <div className="flex-grow border-t border-slate-300"></div>
-            <span className="flex-shrink-0 mx-4 text-slate-400 text-xs font-bold uppercase tracking-wider">or continue with</span>
-            <div className="flex-grow border-t border-slate-300"></div>
+          {/* OR Divider */}
+          <div className="relative flex py-5 items-center">
+            <div className="flex-grow border-t border-slate-200"></div>
+            <span className="flex-shrink-0 mx-4 text-slate-400 text-xs font-bold uppercase tracking-wider">OR</span>
+            <div className="flex-grow border-t border-slate-200"></div>
           </div>
 
-          <GlassButton 
+          {/* Continue with Google */}
+          <button
             type="button"
-            variant="secondary"
-            size="lg"
-            className="w-full bg-white/50 hover:bg-white/80"
             onClick={() => loginWithGoogle()}
             disabled={isLoading || isGoogleLoading}
+            className="w-full py-3.5 rounded-2xl font-bold text-sm text-slate-700 bg-white/70 hover:bg-white border border-slate-200 hover:border-slate-300 shadow-sm hover:shadow-md transition-all duration-300 flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]"
           >
             {isGoogleLoading ? (
-               <span className="w-5 h-5 border-2 border-slate-400 border-t-slate-800 rounded-full animate-spin mr-3"></span>
+               <span className="w-5 h-5 border-2 border-slate-400 border-t-slate-800 rounded-full animate-spin"></span>
             ) : (
-               <svg className="w-5 h-5 mr-3" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g clipPath="url(#clip0_32_4705)"><path d="M23.7659 12.2741C23.7659 11.4601 23.6999 10.6391 23.5579 9.83911H12.2399V14.4581H18.7209C18.4379 15.9381 17.5879 17.2681 16.3269 18.1041V21.0961H20.1899C22.4609 19.0061 23.7659 15.9261 23.7659 12.2741Z" fill="#4285F4"/><path d="M12.2403 23.9998C15.4853 23.9998 18.2083 22.9378 20.1903 21.0958L16.3273 18.1038C15.2533 18.8328 13.8633 19.2518 12.2403 19.2518C9.11234 19.2518 6.45834 17.1398 5.50634 14.3008H1.51538V17.3918C3.55238 21.4428 7.69734 23.9998 12.2403 23.9998Z" fill="#34A853"/><path d="M5.50153 14.2996C5.00853 12.8256 5.00853 11.1736 5.50153 9.69961V6.60861H1.51553C-0.186469 10.0046 -0.186469 13.9946 1.51553 17.3906L5.50153 14.2996Z" fill="#FBBC05"/><path d="M12.2403 4.74766C13.9573 4.72266 15.6023 5.36566 16.8423 6.54766L20.2683 3.12166C18.1013 1.08266 15.2213 -0.0353412 12.2403 0.000658826C7.69734 0.000658826 3.55238 2.55666 1.51538 6.60766L5.50038 9.69866C6.45138 6.85266 9.10834 4.74766 12.2403 4.74766Z" fill="#EA4335"/></g><defs><clipPath id="clip0_32_4705"><rect width="24" height="24" fill="white"/></clipPath></defs></svg>
+               <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g clipPath="url(#clip0_32_4705)"><path d="M23.7659 12.2741C23.7659 11.4601 23.6999 10.6391 23.5579 9.83911H12.2399V14.4581H18.7209C18.4379 15.9381 17.5879 17.2681 16.3269 18.1041V21.0961H20.1899C22.4609 19.0061 23.7659 15.9261 23.7659 12.2741Z" fill="#4285F4"/><path d="M12.2403 23.9998C15.4853 23.9998 18.2083 22.9378 20.1903 21.0958L16.3273 18.1038C15.2533 18.8328 13.8633 19.2518 12.2403 19.2518C9.11234 19.2518 6.45834 17.1398 5.50634 14.3008H1.51538V17.3918C3.55238 21.4428 7.69734 23.9998 12.2403 23.9998Z" fill="#34A853"/><path d="M5.50153 14.2996C5.00853 12.8256 5.00853 11.1736 5.50153 9.69961V6.60861H1.51553C-0.186469 10.0046 -0.186469 13.9946 1.51553 17.3906L5.50153 14.2996Z" fill="#FBBC05"/><path d="M12.2403 4.74766C13.9573 4.72266 15.6023 5.36566 16.8423 6.54766L20.2683 3.12166C18.1013 1.08266 15.2213 -0.0353412 12.2403 0.000658826C7.69734 0.000658826 3.55238 2.55666 1.51538 6.60766L5.50038 9.69866C6.45138 6.85266 9.10834 4.74766 12.2403 4.74766Z" fill="#EA4335"/></g><defs><clipPath id="clip0_32_4705"><rect width="24" height="24" fill="white"/></clipPath></defs></svg>
             )}
             Continue with Google
-          </GlassButton>
+          </button>
 
-          <div className="mt-8 grid grid-cols-3 gap-2 text-center text-[10px] font-bold uppercase tracking-tighter">
-             {['student', 'faculty', 'parent', 'hod', 'warden', 'admin'].map(r => (
-               <div key={r} className="bg-white/30 p-2 rounded-lg border border-white/50 text-indigo-900/60 shadow-sm">{r}</div>
-             ))}
-          </div>
+          {/* Footer */}
+          <p className="text-sm text-slate-500 mt-8">
+            {isSignUp ? 'Already have an account? ' : "Don't have an account? "}
+            <button 
+              type="button" 
+              onClick={() => { setIsSignUp(!isSignUp); setError(''); }}
+              className="font-semibold text-indigo-600 hover:text-indigo-800 transition-colors"
+            >
+              {isSignUp ? 'Sign In here' : 'Sign Up here'}
+            </button>
+          </p>
+
         </GlassCard>
       </div>
 
