@@ -79,7 +79,7 @@ const Approvals: React.FC = () => {
       const hasFaculty = newApprovals.some(a => a.role === UserRole.FACULTY);
       const hasWarden = newApprovals.some(a => a.role === UserRole.WARDEN);
       
-      if (hasParent && hasFaculty && hasWarden) {
+      if (hasParent && hasFaculty) {
          newStatus = 'Approved' as any;
       }
     }

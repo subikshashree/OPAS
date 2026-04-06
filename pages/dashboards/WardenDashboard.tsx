@@ -33,7 +33,7 @@ const WardenDashboard: React.FC = () => {
       const hasParent = newApprovals.some((a: any) => a.role === UserRole.PARENT);
       const hasFaculty = newApprovals.some((a: any) => a.role === UserRole.FACULTY);
       const hasWarden = newApprovals.some((a: any) => a.role === UserRole.WARDEN);
-      if (hasParent && hasFaculty && hasWarden) newStatus = 'Approved';
+      if (hasParent && hasFaculty) newStatus = 'Approved';
     }
     setAllLeaves(prev => prev.map(l => l.id === id ? { ...l, status: newStatus, approvals: newApprovals } : l));
     try {
