@@ -47,6 +47,11 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
+// ─── HELPER: Validate name has at least one letter ──────────────
+function isValidName(name) {
+  return name && /[a-zA-Z]/.test(name);
+}
+
 // ─── LOGIN / REGISTER ──────────────────────────────────────────
 // POST /api/opas/auth/login
 // Body: { email, name?, avatar? }
@@ -75,13 +80,19 @@ app.post('/api/opas/auth/login', async (req, res) => {
     }
 
     // Auto-register new user as STUDENT
+    // Name must contain at least one letter — don't accept pure numbers
+    const derivedName = (name && isValidName(name)) ? name : null;
+    if (!derivedName) {
+      // If login is via numeric ID with no valid name, just look up and fail
+      return res.status(404).json({ error: 'User not found. Please register via Google Sign-In or contact admin.' });
+    }
     const numericId = String(100000 + Math.floor(Math.random() * 900000));
     const newUser = {
       _id: numericId,
-      name: name || normalizedEmail.split('@')[0],
+      name: derivedName,
       email: normalizedEmail,
       roles: ['STUDENT'],
-      avatar: avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(name || normalizedEmail.split('@')[0])}&background=random`,
+      avatar: avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(derivedName)}&background=random`,
       permissions: [],
       status: 'ACTIVE',
       studentId: numericId,
@@ -123,10 +134,21 @@ app.get('/api/opas/users', async (req, res) => {
   }
 });
 
+// ─── HELPER: Find user by string _id or ObjectId ───────────────
+async function findUserById(id) {
+  // Try string _id first (numeric IDs like "660004")
+  let user = await usersCollection.findOne({ _id: id });
+  // Fall back to ObjectId only for valid 24-char hex strings
+  if (!user && /^[a-f\d]{24}$/i.test(id)) {
+    user = await usersCollection.findOne({ _id: new ObjectId(id) });
+  }
+  return user;
+}
+
 // ─── GET USER BY ID ─────────────────────────────────────────────
 app.get('/api/opas/users/:id', async (req, res) => {
   try {
-    const user = await usersCollection.findOne({ _id: new ObjectId(req.params.id) });
+    const user = await findUserById(req.params.id);
     if (!user) return res.status(404).json({ error: 'User not found' });
     res.json(formatUser(user));
   } catch (err) {
@@ -174,11 +196,20 @@ app.put('/api/opas/users/:id', async (req, res) => {
       updateFields.roles = [req.body.role];
     }
 
-    const result = await usersCollection.findOneAndUpdate(
-      { _id: new ObjectId(req.params.id) },
+    // Try string _id first, then ObjectId
+    let query = { _id: req.params.id };
+    let result = await usersCollection.findOneAndUpdate(
+      query,
       { $set: updateFields },
       { returnDocument: 'after' }
     );
+    if (!result && /^[a-f\d]{24}$/i.test(req.params.id)) {
+      result = await usersCollection.findOneAndUpdate(
+        { _id: new ObjectId(req.params.id) },
+        { $set: updateFields },
+        { returnDocument: 'after' }
+      );
+    }
 
     if (!result) return res.status(404).json({ error: 'User not found' });
     
@@ -193,7 +224,11 @@ app.put('/api/opas/users/:id', async (req, res) => {
 // ─── DELETE USER ────────────────────────────────────────────────
 app.delete('/api/opas/users/:id', async (req, res) => {
   try {
-    const result = await usersCollection.deleteOne({ _id: new ObjectId(req.params.id) });
+    // Try string _id first, then ObjectId
+    let result = await usersCollection.deleteOne({ _id: req.params.id });
+    if (result.deletedCount === 0 && /^[a-f\d]{24}$/i.test(req.params.id)) {
+      result = await usersCollection.deleteOne({ _id: new ObjectId(req.params.id) });
+    }
     if (result.deletedCount === 0) return res.status(404).json({ error: 'User not found' });
     res.json({ message: 'User deleted successfully' });
   } catch (err) {

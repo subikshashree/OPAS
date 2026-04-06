@@ -50,7 +50,7 @@ const Login: React.FC = () => {
     const normalizedId = userId.trim().toLowerCase();
 
     // ─── 1. Attempt Cloud Auth ───────────────────
-    const bUser = await loginViaBackend(normalizedId, normalizedId, '');
+    const bUser = await loginViaBackend(normalizedId, '', '');
     if (bUser) {
       login(bUser);
       navigate('/');
@@ -178,11 +178,11 @@ const Login: React.FC = () => {
               <label className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-2">System Identity</label>
               <GlassInput
                 type="text"
-                placeholder="e.g. 664893 (Numbers Only)"
+                placeholder="e.g. student@opas.edu or 108422"
                 icon={<span>👤</span>}
                 required
                 value={userId}
-                onChange={(e) => setUserId(e.target.value.replace(/[^0-9]/g, ''))}
+                onChange={(e) => setUserId(e.target.value)}
               />
             </div>
 
