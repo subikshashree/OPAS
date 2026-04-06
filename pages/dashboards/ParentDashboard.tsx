@@ -53,7 +53,7 @@ const ParentDashboard: React.FC = () => {
   const placement = ward ? MOCK_PLACEMENT[ward.id] : null;
 
   // In Demo Mode, allow the Parent to see ALL pending parent leaves so they can test easily
-  const leaveQueue = allLeaves.filter(lr => lr.status === 'PENDING_PARENT');
+  const leaveQueue = allLeaves.filter(lr => lr.status === 'Pending');
 
   const totalDays = attendance.length;
   const presentDays = attendance.filter(a => a.status === 'PRESENT').length;

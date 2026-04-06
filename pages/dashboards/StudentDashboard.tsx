@@ -375,8 +375,12 @@ const StudentDashboard: React.FC = () => {
                       </div>
 
                       <div className="flex flex-col items-end justify-center min-w-[120px]">
-                        <GlassBadge variant={leave.status.includes('PENDING') ? 'warning' : leave.status === 'APPROVED' ? 'success' : 'danger'} className="text-sm px-4 py-1.5 shadow-sm">
-                          {leave.status.includes('PENDING') ? `⏳ ${leave.status.replace('_', ' ')}` : leave.status}
+                        <GlassBadge variant={leave.status === 'Pending' ? 'warning' : leave.status === 'Approved' ? 'success' : 'danger'} className="text-sm px-4 py-1.5 shadow-sm">
+                          {leave.status === 'Pending' 
+                           ? '⏳ Pending' 
+                           : (leave.status === 'Approved' && leave.approvals?.length > 0)
+                             ? `Approved by ${leave.approvals[leave.approvals.length - 1].role.toLowerCase().replace(/^\w/, (c: string) => c.toUpperCase())}`
+                             : leave.status}
                         </GlassBadge>
                         <span className="text-[9px] text-slate-400 font-bold mt-2 uppercase tracking-wider">Current Status</span>
                       </div>

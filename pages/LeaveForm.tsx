@@ -35,15 +35,11 @@ const LeaveForm: React.FC = () => {
   }
 
   const isHosteler = user.isHosteler || false;
-  const workflowSteps = getWorkflowSteps(formData.type, isHosteler);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (isSubmitting) return;
     setIsSubmitting(true);
-    
-    // Calculate accurate first step status
-    const initialStatus = workflowSteps.length > 0 ? workflowSteps[0].statusKey : 'APPROVED';
     
     // Build the new LeaveRequest object
     const newLeave = {
@@ -61,7 +57,7 @@ const LeaveForm: React.FC = () => {
       endTime: formData.endTime,
       type: formData.type,
       reason: formData.reason,
-      status: initialStatus,
+      status: 'Pending',
       approvals: [],
       // Ensure applied time perfectly matches what the user saw
       appliedAt: currentTime.toISOString()
@@ -161,30 +157,7 @@ const LeaveForm: React.FC = () => {
             />
           </div>
 
-          {/* Workflow Visualization */}
-          <div className="mt-6 p-5 bg-indigo-500/5 rounded-2xl border border-indigo-200/50 flex flex-col gap-3">
-            <h4 className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Approval Pipeline</h4>
-            {workflowSteps.length === 0 ? (
-              <p className="text-xs text-slate-500 font-medium">
-                {formData.type === 'SICK' && !isHosteler 
-                  ? '⚠ Sick leave is only for Hostel students. Dayscholar sick leaves are handled through the office.' 
-                  : 'No approvals required.'}
-              </p>
-            ) : (
-              <div className="flex items-center gap-2 md:gap-4 text-xs md:text-sm font-semibold text-slate-600 flex-wrap">
-                <span className="px-3 py-1 bg-blue-50/50 rounded-lg text-blue-700 font-bold text-[10px] uppercase">You Submit</span>
-                {workflowSteps.map((step, i) => (
-                  <React.Fragment key={step.label}>
-                    <span className="text-indigo-300">→</span>
-                    <span className="px-3 py-1 bg-white/40 rounded-lg shadow-sm border border-white/50 text-indigo-700">{step.label}</span>
-                  </React.Fragment>
-                ))}
-                <span className="text-indigo-300">→</span>
-                <span className="px-3 py-1 bg-emerald-50/50 rounded-lg text-emerald-700 font-bold text-[10px] uppercase">✓ Approved</span>
-              </div>
-            )}
-            {formData.type === 'SICK' && <p className="text-[10px] text-slate-400 font-medium mt-1">⏱ Maximum duration: 8 hours</p>}
-          </div>
+          {/* Workflow Visualization removed for simple parallel approval */}
 
           <div className="flex items-center justify-between mt-4 p-4 bg-slate-50/50 rounded-2xl border border-slate-200">
              <div>

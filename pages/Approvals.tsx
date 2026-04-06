@@ -68,12 +68,13 @@ const Approvals: React.FC = () => {
 
     let newStatus = reqToUpdate.status;
     let newApprovals = reqToUpdate.approvals || [];
+    const role = user?.roles[0] || UserRole.ADMIN;
 
     if (!approved) {
-      newStatus = 'REJECTED' as const;
+      newStatus = 'Rejected' as any;
     } else {
-      newStatus = getNextPendingStatus(reqToUpdate.type, reqToUpdate.isHosteler || false, newApprovals.length + 1);
-      newApprovals = [...newApprovals, { role: user?.roles[0] || UserRole.ADMIN, timestamp: new Date().toISOString(), approved: true }];
+      newStatus = 'Approved' as any;
+      newApprovals = [...newApprovals, { role, timestamp: new Date().toISOString(), approved: true }];
     }
 
     // Optimistic UI update
@@ -116,8 +117,8 @@ const Approvals: React.FC = () => {
 
     if (!isMyStudent) return false;
 
-    // 2. Workflow Status check
-    return user?.roles.some(role => canUserApprove(role, req.status as any));
+    // 2. Status check
+    return req.status === 'Pending';
   });
 
   return (
