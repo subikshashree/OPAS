@@ -1,16 +1,53 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../App';
-import { MOCK_HOSTEL_STUDENTS, MOCK_LEAVE_REQUESTS } from '../../constants';
+import { MOCK_HOSTEL_STUDENTS } from '../../constants';
+import { UserRole } from '../../types';
 import { GlassCard, GlassButton, GlassBadge, FloatingSphere } from '../../components/ui';
 
 const WardenDashboard: React.FC = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'overview' | 'students' | 'leaves'>('overview');
+  const [allLeaves, setAllLeaves] = useState<any[]>([]);
+
+  const API_BASE = import.meta.env.VITE_API_URL || '/api/opas';
+
+  useEffect(() => {
+    fetch(`${API_BASE}/leaves`)
+      .then(r => r.json())
+      .then(data => { if (Array.isArray(data)) setAllLeaves(data); })
+      .catch(() => {
+        const saved = JSON.parse(localStorage.getItem('opas_global_leaves') || '[]');
+        setAllLeaves(saved);
+      });
+  }, [API_BASE]);
+
+  const handleAction = async (id: string, approved: boolean) => {
+    const req = allLeaves.find(l => l.id === id);
+    if (!req) return;
+    let newStatus = req.status;
+    let newApprovals = req.approvals || [];
+    if (!approved) {
+      newStatus = 'Rejected';
+    } else {
+      newApprovals = [...newApprovals, { role: UserRole.WARDEN, timestamp: new Date().toISOString(), approved: true }];
+      const hasParent = newApprovals.some((a: any) => a.role === UserRole.PARENT);
+      const hasFaculty = newApprovals.some((a: any) => a.role === UserRole.FACULTY);
+      const hasWarden = newApprovals.some((a: any) => a.role === UserRole.WARDEN);
+      if (hasParent && hasFaculty && hasWarden) newStatus = 'Approved';
+    }
+    setAllLeaves(prev => prev.map(l => l.id === id ? { ...l, status: newStatus, approvals: newApprovals } : l));
+    try {
+      await fetch(`${API_BASE}/leaves/${id}`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus, approvals: newApprovals })
+      });
+    } catch (e) { console.warn('Cloud update failed'); }
+  };
 
   if (!user) return null;
 
   const hostelStudents = MOCK_HOSTEL_STUDENTS;
-  const leaveQueue = MOCK_LEAVE_REQUESTS.filter(lr => lr.status === 'PENDING_WARDEN' && lr.residentialType === 'HOSTEL');
+  const leaveQueue = allLeaves.filter(lr => lr.status === 'Pending' && !lr.approvals?.some((a: any) => a.role === 'WARDEN'));
 
   const tabs = [
     { id: 'overview' as const, label: 'Overview', icon: '🏠' },
@@ -158,8 +195,8 @@ const WardenDashboard: React.FC = () => {
                 {lr.type === 'SICK' && <p className="text-xs text-rose-500 font-bold">⏱ Max 8 hours</p>}
               </div>
               <div className="flex gap-3">
-                <GlassButton variant="ghost" className="text-rose-600 hover:bg-rose-50 border border-rose-200">Reject</GlassButton>
-                <GlassButton variant="primary" className="bg-gradient-to-r from-emerald-500 to-emerald-600 border-none">Approve</GlassButton>
+                <GlassButton variant="ghost" className="text-rose-600 hover:bg-rose-50 border border-rose-200" onClick={() => handleAction(lr.id, false)}>Reject</GlassButton>
+                <GlassButton variant="primary" className="bg-gradient-to-r from-emerald-500 to-emerald-600 border-none" onClick={() => handleAction(lr.id, true)}>Approve</GlassButton>
               </div>
             </GlassCard>
           ))}

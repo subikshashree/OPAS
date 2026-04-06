@@ -5,16 +5,16 @@ import { GlassCard, GlassButton, GlassBadge, FloatingSphere } from '../component
 import { useToast } from '../hooks/useToast';
 import { canUserApprove, getNextPendingStatus } from '../hooks/useLeaveWorkflow';
 
-const MOCK_REQUESTS: LeaveRequest[] = [
+const MOCK_REQUESTS: any[] = [
   {
     id: 'req1',
     studentId: 'CS2024001',
     studentName: 'Alex Johnson',
     startDate: '2024-10-25',
     endDate: '2024-10-26',
-    type: 'REGULAR',
+    type: 'NORMAL',
     reason: 'Family function in hometown',
-    status: 'PENDING',
+    status: 'Pending',
     approvals: []
   },
   {
@@ -25,7 +25,7 @@ const MOCK_REQUESTS: LeaveRequest[] = [
     endDate: '2024-10-25',
     type: 'OD',
     reason: 'Inter-college Technical Symposium Paper Presentation',
-    status: 'PARENT_APPROVED',
+    status: 'Pending',
     approvals: [{ role: UserRole.PARENT, timestamp: new Date().toISOString(), approved: true }]
   },
   {
@@ -36,7 +36,7 @@ const MOCK_REQUESTS: LeaveRequest[] = [
     endDate: '2024-10-25',
     type: 'SICK',
     reason: 'Severe fever and exhaustion',
-    status: 'PENDING',
+    status: 'Pending',
     approvals: []
   }
 ];
@@ -77,8 +77,9 @@ const Approvals: React.FC = () => {
       
       const hasParent = newApprovals.some(a => a.role === UserRole.PARENT);
       const hasFaculty = newApprovals.some(a => a.role === UserRole.FACULTY);
+      const hasWarden = newApprovals.some(a => a.role === UserRole.WARDEN);
       
-      if (hasParent && hasFaculty) {
+      if (hasParent && hasFaculty && hasWarden) {
          newStatus = 'Approved' as any;
       }
     }
