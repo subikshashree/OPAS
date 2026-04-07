@@ -68,7 +68,7 @@ const MentorDashboard: React.FC = () => {
     if (!approved) {
       newStatus = 'Rejected';
     } else {
-      newApprovals = [...newApprovals, { role: UserRole.FACULTY, timestamp: new Date().toISOString(), approved: true }];
+      newApprovals = [...newApprovals, { role: UserRole.FACULTY, approverId: user.id, approverName: user.name, timestamp: new Date().toISOString(), approved: true }];
       const hasParent = newApprovals.some((a: any) => a.role === UserRole.PARENT);
       const hasFaculty = newApprovals.some((a: any) => a.role === UserRole.FACULTY);
       const hasWarden = newApprovals.some((a: any) => a.role === UserRole.WARDEN);

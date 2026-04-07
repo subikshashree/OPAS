@@ -26,33 +26,33 @@ const NotificationsDropdown: React.FC = () => {
         const myTasks = tasks.filter(t => t.assignedTo === user.id && t.status !== 'COMPLETED');
         if (myTasks.length > 0) alerts.push({ icon: '📋', title: 'Pending Academic Tasks', desc: `You have ${myTasks.length} incomplete tasks assigned.` });
 
-        const myLeaves = leaves.filter(l => l.studentId === user.id && ['APPROVED', 'REJECTED'].includes(l.status));
+        const myLeaves = leaves.filter(l => l.studentId === user.id && ['Approved', 'Rejected', 'APPROVED', 'REJECTED'].includes(l.status));
         if (myLeaves.length > 0) alerts.push({ icon: '✅', title: 'Leave Updates', desc: `You have ${myLeaves.length} resolved leave requests to view.` });
       }
 
       if (user.roles.includes(UserRole.FACULTY)) {
-        const pendingMenteeLeaves = leaves.filter(l => l.status === 'PENDING_MENTOR' && (user.menteeIds || []).includes(l.studentId));
-        if (pendingMenteeLeaves.length > 0) alerts.push({ icon: '⏳', title: 'Action Required', desc: `You have ${pendingMenteeLeaves.length} mentee leave requests awaiting your authorization.` });
+        const pendingMenteeLeaves = leaves.filter(l => l.status === 'Pending' && !l.approvals?.some((a: any) => a.role === UserRole.FACULTY));
+        if (pendingMenteeLeaves.length > 0) alerts.push({ icon: '⏳', title: 'Action Required', desc: `You have ${pendingMenteeLeaves.length} leave requests awaiting your authorization.` });
       }
 
       if (user.roles.includes(UserRole.PARENT)) {
-        const wardLeaves = leaves.filter(l => l.status === 'PENDING_PARENT' && l.studentId === user.wardId);
+        const wardLeaves = leaves.filter(l => l.status === 'Pending' && !l.approvals?.some((a: any) => a.role === UserRole.PARENT));
         if (wardLeaves.length > 0) alerts.push({ icon: '👨‍👩‍👦', title: 'Ward Leave Request', desc: `Your ward has ${wardLeaves.length} leave request(s) awaiting your consent.` });
       }
 
       if (user.roles.includes(UserRole.WARDEN)) {
-        const pendingWardenLeaves = leaves.filter(l => l.status === 'PENDING_WARDEN'); // Mocking simple match
+        const pendingWardenLeaves = leaves.filter(l => l.status === 'Pending' && !l.approvals?.some((a: any) => a.role === UserRole.WARDEN));
         if (pendingWardenLeaves.length > 0) alerts.push({ icon: '🏢', title: 'Hostel Leaves', desc: `There are ${pendingWardenLeaves.length} pending hostel outpass requests.` });
       }
 
       if (user.roles.includes(UserRole.HOD)) {
-        const pendingHodLeaves = leaves.filter(l => l.status === 'PENDING_HOD' && l.studentDepartment === user.department);
-        if (pendingHodLeaves.length > 0) alerts.push({ icon: '🎓', title: 'Department Leaves', desc: `${pendingHodLeaves.length} advanced leave requests await HoD review.` });
+        const pendingHodLeaves = leaves.filter(l => l.status === 'Pending' && !l.approvals?.some((a: any) => a.role === UserRole.HOD));
+        if (pendingHodLeaves.length > 0) alerts.push({ icon: '🎓', title: 'Department Leaves', desc: `${pendingHodLeaves.length} leave requests await HoD review.` });
       }
 
       if (user.roles.includes(UserRole.ADMIN)) {
-        const totalPending = leaves.filter(l => !['APPROVED', 'REJECTED'].includes(l.status)).length;
-        if (totalPending > 0) alerts.push({ icon: '⚠️', title: 'System Overview', desc: `${totalPending} leaves are currently held up in authorization queues system-wide.` });
+        const totalPending = leaves.filter(l => l.status === 'Pending' || !['Approved', 'Rejected', 'APPROVED', 'REJECTED'].includes(l.status)).length;
+        if (totalPending > 0) alerts.push({ icon: '⚠️', title: 'System Overview', desc: `${totalPending} leaves are in authorization queues system-wide.` });
       }
 
       // Add dummy fallback if no real actionable alerts exist

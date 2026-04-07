@@ -74,7 +74,7 @@ const ParentDashboard: React.FC = () => {
     if (!approved) {
       newStatus = 'Rejected';
     } else {
-      newApprovals = [...newApprovals, { role: UserRole.PARENT, timestamp: new Date().toISOString(), approved: true }];
+      newApprovals = [...newApprovals, { role: UserRole.PARENT, approverId: user.id, approverName: user.name, timestamp: new Date().toISOString(), approved: true }];
       const hasParent = newApprovals.some((a: any) => a.role === UserRole.PARENT);
       const hasFaculty = newApprovals.some((a: any) => a.role === UserRole.FACULTY);
       const hasWarden = newApprovals.some((a: any) => a.role === UserRole.WARDEN);

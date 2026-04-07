@@ -73,7 +73,7 @@ const Approvals: React.FC = () => {
     if (!approved) {
       newStatus = 'Rejected' as any;
     } else {
-      newApprovals = [...newApprovals, { role, timestamp: new Date().toISOString(), approved: true }];
+      newApprovals = [...newApprovals, { role, approverId: user?.id || '', approverName: user?.name || '', timestamp: new Date().toISOString(), approved: true }];
       
       const hasParent = newApprovals.some(a => a.role === UserRole.PARENT);
       const hasFaculty = newApprovals.some(a => a.role === UserRole.FACULTY);
