@@ -3,6 +3,7 @@ import { useAuth } from '../../App';
 import { UserRole } from '../../types';
 import { MOCK_USERS_LIST, MOCK_DEPARTMENT_STATS, MOCK_LEAVE_REQUESTS } from '../../constants';
 import { GlassCard, GlassBadge, FloatingSphere } from '../../components/ui';
+import { motion } from 'framer-motion';
 
 const AdminDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -81,8 +82,14 @@ const AdminDashboard: React.FC = () => {
             </h2>
           </div>
           <div className="max-h-[400px] overflow-y-auto no-scrollbar divide-y divide-white/40">
-            {allUsers.map(u => (
-              <div key={u.id} className="flex items-center gap-4 p-4 hover:bg-white/30 transition-colors">
+            {allUsers.map((u, i) => (
+              <motion.div 
+                key={u.id} 
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: i * 0.05 }}
+                className="flex items-center gap-4 p-4 hover:bg-white/30 transition-colors"
+              >
                 <img src={u.avatar} className="w-10 h-10 rounded-xl border-2 border-white shadow-sm object-cover" alt="" />
                 <div className="flex-1 min-w-0">
                   <p className="font-bold text-slate-800 text-sm truncate">{u.name}</p>
@@ -108,7 +115,7 @@ const AdminDashboard: React.FC = () => {
                     }>{r}</GlassBadge>
                   ))}
                 </div>
-              </div>
+              </motion.div>
             ))}
           </div>
         </GlassCard>
@@ -132,14 +139,20 @@ const AdminDashboard: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/40">
-                {departments.map(d => (
-                  <tr key={d.name} className="hover:bg-white/30 transition-colors">
+                {departments.map((d, i) => (
+                  <motion.tr 
+                    key={d.name} 
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: i * 0.1 }}
+                    className="hover:bg-white/30 transition-colors"
+                  >
                     <td className="px-5 py-3 font-bold text-slate-800 text-sm">{d.name}</td>
                     <td className="px-5 py-3 text-sm text-slate-700">{d.totalStudents}</td>
                     <td className="px-5 py-3 text-sm text-slate-700">{d.totalFaculty}</td>
                     <td className="px-5 py-3"><span className={`font-bold text-sm ${d.avgAttendance >= 80 ? 'text-emerald-600' : 'text-amber-600'}`}>{d.avgAttendance}%</span></td>
                     <td className="px-5 py-3"><span className={`font-bold text-sm ${d.placementRate >= 60 ? 'text-emerald-600' : 'text-rose-600'}`}>{d.placementRate}%</span></td>
-                  </tr>
+                  </motion.tr>
                 ))}
               </tbody>
             </table>

@@ -29,3 +29,35 @@ export const summarizeApprovals = async (requestsCount: number) => {
     return `You have ${requestsCount} requests awaiting your review.`;
   }
 };
+export const handleHelpdeskChat = async (message: string, history: {role: string, content: string}[] = []) => {
+  try {
+    const formattedHistory = history.map(h => `${h.role}: ${h.content}`).join('\n');
+    const prompt = `You are the OPAS Helpdesk Assistant. Be concise, polite, and helpful.\n\nConversation history:\n${formattedHistory}\n\nUser: ${message}\nAssistant:`;
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: prompt,
+    });
+    return response.text;
+  } catch (error) {
+    console.error("Gemini Chat Error:", error);
+    return "I'm having trouble connecting to my brain right now. Please try again later.";
+  }
+};
+
+export const getMentorInsight = async (studentName: string, attendance: number, cgpa: number, reason: string) => {
+  try {
+    const prompt = `As a high-level academic AI, provide a quick 1-2 sentence recommendation for a Mentor reviewing a leave request. 
+Student Name: ${studentName}
+Attendance: ${attendance}% 
+CGPA: ${cgpa}
+Leave Reason: "${reason}"
+Provide an encouraging but strict recommendation on whether to approve based on the attendance and CGPA.`;
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: prompt,
+    });
+    return response.text;
+  } catch (error) {
+    return `Student ${studentName} has ${attendance}% attendance and ${cgpa} CGPA.`;
+  }
+};

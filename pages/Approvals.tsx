@@ -4,6 +4,30 @@ import { UserRole, LeaveRequest } from '../types';
 import { GlassCard, GlassButton, GlassBadge, FloatingSphere } from '../components/ui';
 import { useToast } from '../hooks/useToast';
 import { canUserApprove, getNextPendingStatus } from '../hooks/useLeaveWorkflow';
+import { getMentorInsight } from '../geminiService';
+
+const InsightBox: React.FC<{ req: any }> = ({ req }) => {
+  const [insight, setInsight] = React.useState<string | null>(null);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    // Note: In a real app we'd fetch actual student attendance/cgpa
+    getMentorInsight(req.studentName, 85, 8.5, req.reason).then(res => {
+      setInsight(res);
+      setLoading(false);
+    });
+  }, [req]);
+
+  return (
+    <div className="bg-indigo-50/50 p-4 rounded-xl border border-indigo-100 flex items-start gap-3 mt-3 shadow-inner">
+      <div className="text-xl mt-1">✨</div>
+      <div className="text-sm text-slate-700">
+        <span className="font-bold text-indigo-600 block text-[10px] uppercase tracking-wider mb-1">AI Recommendation</span>
+        {loading ? <span className="animate-pulse">Analyzing student profile...</span> : <span className="font-medium">{insight}</span>}
+      </div>
+    </div>
+  );
+};
 
 const MOCK_REQUESTS: any[] = [
   {
@@ -164,6 +188,10 @@ const Approvals: React.FC = () => {
                 <p className="text-[10px] text-slate-400 font-extrabold uppercase tracking-widest mb-1">Reason Log</p>
                 <p className="text-slate-700 font-medium">{req.reason}</p>
               </div>
+
+              {user?.roles.includes(UserRole.FACULTY) && (
+                <InsightBox req={req} />
+              )}
 
               <div className="flex flex-wrap items-center gap-x-6 gap-y-2 pt-2">
                 <span className="flex items-center gap-2 text-sm font-semibold text-slate-600 bg-indigo-50/50 px-3 py-1.5 rounded-lg">

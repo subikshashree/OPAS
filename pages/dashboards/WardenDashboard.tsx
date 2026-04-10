@@ -3,6 +3,9 @@ import { useAuth } from '../../App';
 import { MOCK_HOSTEL_STUDENTS } from '../../constants';
 import { UserRole } from '../../types';
 import { GlassCard, GlassButton, GlassBadge, FloatingSphere } from '../../components/ui';
+import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+
+const PIE_COLORS = ['#34d399', '#818cf8', '#f43f5e'];
 
 const WardenDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -55,6 +58,15 @@ const WardenDashboard: React.FC = () => {
     { id: 'leaves' as const, label: 'Leave Queue', icon: '🚪' },
   ];
 
+  const studentsOnLeave = allLeaves.filter(lr => lr.status === 'Approved').length;
+  const studentsInHostel = Math.max(0, hostelStudents.length - studentsOnLeave - 2);
+  
+  const residentStatusData = [
+    { name: 'In Hostel', value: studentsInHostel },
+    { name: 'On Leave', value: studentsOnLeave },
+    { name: 'On OD', value: 2 },
+  ];
+
   return (
     <div className="space-y-8 relative animate-in fade-in slide-in-from-bottom-4 duration-700">
       <FloatingSphere size={200} color="bg-amber-300" delay={0} className="-top-16 -right-16" />
@@ -95,7 +107,7 @@ const WardenDashboard: React.FC = () => {
 
       {/* ── Overview ── */}
       {activeTab === 'overview' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <GlassCard variant="light" className="p-8">
             <h2 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-3">
               <span className="p-2 bg-indigo-500/10 rounded-xl">🏠</span> Block Summary
@@ -116,13 +128,32 @@ const WardenDashboard: React.FC = () => {
             </div>
           </GlassCard>
 
+          <GlassCard variant="light" className="p-8 text-center flex flex-col justify-center">
+            <h2 className="text-lg font-bold text-slate-800 mb-2 flex items-center justify-center gap-3">
+              <span className="p-2 bg-pink-500/10 rounded-xl">📍</span> Resident Status
+            </h2>
+            <div className="h-[200px] w-full flex justify-center">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={residentStatusData} innerRadius={50} outerRadius={80} paddingAngle={5} dataKey="value" stroke="none">
+                    {residentStatusData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.8)', borderRadius: '12px', border: 'none' }} />
+                  <Legend verticalAlign="bottom" height={36} iconType="circle" />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </GlassCard>
+
           <GlassCard variant="light" className="p-8">
             <h2 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-3">
               <span className="p-2 bg-amber-500/10 rounded-xl">⚠️</span> Alerts
             </h2>
             <div className="space-y-3">
               {leaveQueue.length > 0 && (
-                <div className="p-4 bg-amber-50/50 rounded-xl border border-amber-200/50">
+                <div className="p-4 bg-amber-50/50 rounded-xl border border-amber-200/50 lg:col-span-1">
                   <p className="font-bold text-amber-700 text-sm">{leaveQueue.length} leave request(s) need processing</p>
                   <p className="text-xs text-amber-600 mt-1">Click "Leave Queue" tab to review.</p>
                 </div>

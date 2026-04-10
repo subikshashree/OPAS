@@ -12,6 +12,7 @@ import DepartmentManagement from './pages/DepartmentManagement';
 import Login from './pages/Login';
 import CommandPalette from './components/CommandPalette';
 import NotificationsDropdown from './components/NotificationsDropdown';
+import ChatWidget from './components/ChatWidget';
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api/opas';
 
@@ -146,6 +147,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         isOpen={showPalette} 
         onClose={() => setShowPalette(false)} 
       />
+      <ChatWidget />
     </div>
   );
 };

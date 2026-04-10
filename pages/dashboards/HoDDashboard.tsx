@@ -4,6 +4,14 @@ import { useAuth } from '../../App';
 import { UserRole } from '../../types';
 import { MOCK_DEPARTMENT_STATS, MOCK_USERS_LIST } from '../../constants';
 import { GlassCard, GlassBadge, FloatingSphere } from '../../components/ui';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
+
+const LEAVE_TREND_DATA = [
+  { week: 'Week 1', applied: 15, approved: 10, rejected: 5 },
+  { week: 'Week 2', applied: 20, approved: 15, rejected: 3 },
+  { week: 'Week 3', applied: 10, approved: 8, rejected: 1 },
+  { week: 'Week 4', applied: 25, approved: 18, rejected: 4 },
+];
 
 const HoDDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -150,10 +158,45 @@ const HoDDashboard: React.FC = () => {
       )}
 
       {activeTab === 'leave-report' && (
-        <GlassCard variant="light" className="p-12 text-center text-slate-500 font-bold">
-          <p className="text-2xl mb-4">📋</p>
-          <p>Leave Reports will be displayed here.</p>
-        </GlassCard>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <GlassCard variant="light" className="p-8">
+            <h2 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-3">
+              <span className="p-2 bg-indigo-500/10 rounded-xl">📊</span> Leave Applications Trend
+            </h2>
+            <div className="h-[300px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={LEAVE_TREND_DATA}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#ffffff40" />
+                  <XAxis dataKey="week" stroke="#64748b" />
+                  <YAxis stroke="#64748b" />
+                  <Tooltip contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.8)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.4)', backdropFilter: 'blur(10px)', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                  <Legend />
+                  <Bar dataKey="applied" name="Applied" fill="#818cf8" radius={[6, 6, 0, 0]} />
+                  <Bar dataKey="approved" name="Approved" fill="#34d399" radius={[6, 6, 0, 0]} />
+                  <Bar dataKey="rejected" name="Rejected" fill="#f43f5e" radius={[6, 6, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </GlassCard>
+
+          <GlassCard variant="light" className="p-8">
+            <h2 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-3">
+              <span className="p-2 bg-rose-500/10 rounded-xl">📈</span> Absences Over Time
+            </h2>
+            <div className="h-[300px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={LEAVE_TREND_DATA}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#ffffff40" />
+                  <XAxis dataKey="week" stroke="#64748b" />
+                  <YAxis stroke="#64748b" />
+                  <Tooltip contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.8)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.4)', backdropFilter: 'blur(10px)', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                  <Legend />
+                  <Line type="monotone" dataKey="applied" name="Total Leaves" stroke="#818cf8" strokeWidth={4} dot={{ r: 6, fill: '#818cf8' }} activeDot={{ r: 8 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </GlassCard>
+        </div>
       )}
     </div>
   );

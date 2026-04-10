@@ -5,6 +5,8 @@ import { UserRole, LeaveRequest } from '../../types';
 import { MOCK_ACADEMIC_DATA, MOCK_ATTENDANCE, MOCK_PLACEMENT, MOCK_TASKS, MOCK_USERS_LIST } from '../../constants';
 import { GlassCard, GlassButton, GlassBadge, FloatingSphere } from '../../components/ui';
 import { useToast } from '../../hooks/useToast';
+import { generatePdfPass } from '../../lib/pdfGenerator';
+import QRCode from 'qrcode';
 
 const StudentDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -86,6 +88,17 @@ const StudentDashboard: React.FC = () => {
   const handleTaskSubmit = (taskId: string) => {
     setLocalTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: 'COMPLETED' } : t));
     showToast('Task submitted successfully! Awaiting mentor review.', 'success');
+  };
+
+  const handleDownloadEpass = async (leave: LeaveRequest) => {
+    try {
+      showToast('Generating secure E-Pass...', 'success');
+      const qrDataUrl = await QRCode.toDataURL(`OPAS E-Pass: ${leave.studentId} | ${leave.startDate} to ${leave.endDate}`);
+      await generatePdfPass(leave, qrDataUrl);
+    } catch (e) {
+      console.error(e);
+      showToast('Failed to generate E-Pass', 'error');
+    }
   };
 
   const tabs = [
@@ -363,11 +376,22 @@ const StudentDashboard: React.FC = () => {
                         <GlassBadge variant={leave.status === 'Pending' ? 'warning' : leave.status === 'Approved' ? 'success' : 'danger'} className="text-sm px-4 py-1.5 shadow-sm">
                           {leave.status === 'Pending' 
                            ? '⏳ Pending' 
-                           : (leave.status === 'Approved' && leave.approvals?.length > 0)
-                             ? `Approved by ${leave.approvals[leave.approvals.length - 1].role.toLowerCase().replace(/^\w/, (c: string) => c.toUpperCase())}`
+                           : (leave.status === 'Approved')
+                             ? `✅ Approved`
                              : leave.status}
                         </GlassBadge>
                         <span className="text-[9px] text-slate-400 font-bold mt-2 uppercase tracking-wider">Current Status</span>
+                        
+                        {leave.status === 'Approved' && (
+                          <GlassButton 
+                            variant="primary" 
+                            size="sm" 
+                            className="mt-3 text-xs w-full whitespace-nowrap bg-indigo-500 hover:bg-indigo-600 border-none shadow-md shadow-indigo-500/30"
+                            onClick={() => handleDownloadEpass(leave)}
+                          >
+                            ⬇️ E-Pass PDF
+                          </GlassButton>
+                        )}
                       </div>
 
                     </div>
