@@ -4,6 +4,7 @@ import { MOCK_HOSTEL_STUDENTS } from '../../constants';
 import { UserRole } from '../../types';
 import { GlassCard, GlassButton, GlassBadge, FloatingSphere } from '../../components/ui';
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { useToast } from '../../hooks/useToast';
 
 const PIE_COLORS = ['#34d399', '#818cf8', '#f43f5e'];
 
@@ -11,17 +12,15 @@ const WardenDashboard: React.FC = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'overview' | 'students' | 'leaves'>('overview');
   const [allLeaves, setAllLeaves] = useState<any[]>([]);
+  const { showToast, ToastComponent } = useToast();
 
   const API_BASE = import.meta.env.VITE_API_URL || '/api/opas';
 
   useEffect(() => {
     fetch(`${API_BASE}/leaves`)
-      .then(r => r.json())
+      .then(r => r.ok ? r.json() : [])
       .then(data => { if (Array.isArray(data)) setAllLeaves(data); })
-      .catch(() => {
-        const saved = JSON.parse(localStorage.getItem('opas_global_leaves') || '[]');
-        setAllLeaves(saved);
-      });
+      .catch(() => showToast('Leaves cloud disconnected', 'error'));
   }, [API_BASE]);
 
   const handleAction = async (id: string, approved: boolean) => {
@@ -69,6 +68,7 @@ const WardenDashboard: React.FC = () => {
 
   return (
     <div className="space-y-8 relative animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <ToastComponent />
       <FloatingSphere size={200} color="bg-amber-300" delay={0} className="-top-16 -right-16" />
 
       {/* Hero */}

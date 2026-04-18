@@ -43,10 +43,12 @@ const Approvals: React.FC = () => {
       .then(data => {
         if (Array.isArray(data)) {
           setRequests(data);
+        } else {
+          showToast('Failed to parse Cloud leaves', 'error');
         }
       })
       .catch(err => {
-        console.error('Fetch leaves error', err);
+        showToast('Cloud API Unreachable', 'error');
       });
   }, [API_BASE]);
 
@@ -76,16 +78,18 @@ const Approvals: React.FC = () => {
     setRequests(prev => prev.map(r => r.id === id ? { ...r, status: newStatus, approvals: newApprovals } : r));
 
     try {
-      await fetch(`${API_BASE}/leaves/${id}`, {
+      const res = await fetch(`${API_BASE}/leaves/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus, approvals: newApprovals })
       });
+      if (!res.ok) throw new Error();
+      showToast(`Request ${approved ? 'Authorized' : 'Terminated'} successfully! Workflow updated.`, approved ? 'success' : 'error');
     } catch (e) {
-      console.warn('API update failed.');
+      showToast('Cloud API rejected operation. Reverting state.', 'error');
+      // Revert optimistic update
+      setRequests(prev => prev.map(r => r.id === id ? { ...r, status: reqToUpdate.status, approvals: reqToUpdate.approvals } : r));
     }
-    
-    showToast(`Request ${approved ? 'Authorized' : 'Terminated'} successfully! Workflow updated.`, approved ? 'success' : 'error');
   };
 
   const filteredRequests = requests.filter(req => {

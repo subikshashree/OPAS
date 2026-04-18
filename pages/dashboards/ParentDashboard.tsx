@@ -15,34 +15,28 @@ const ParentDashboard: React.FC = () => {
   const activeTab = tab || 'ward';
   const [allLeaves, setAllLeaves] = useState<LeaveRequest[]>([]);
   const [allUsers, setAllUsers] = useState<any[]>(MOCK_USERS_LIST);
+  const [allMessages, setAllMessages] = useState<any[]>([]);
   const [refresh, setRefresh] = useState(0);
   const API_BASE = import.meta.env.VITE_API_URL || '/api/opas';
 
   useEffect(() => {
-
-    // Fetch leaves from cloud
     fetch(`${API_BASE}/leaves`)
-      .then(r => r.json())
-      .then(data => {
-        if (Array.isArray(data)) setAllLeaves(data);
-      })
-      .catch(() => {
-        const saved = JSON.parse(localStorage.getItem('opas_global_leaves') || '[]');
-        setAllLeaves(saved);
-      });
+      .then(r => r.ok ? r.json() : [])
+      .then(data => { if (Array.isArray(data)) setAllLeaves(data); })
+      .catch(() => showToast('Leaves cloud disconnected', 'error'));
 
-    // Try fetching from backend to get live students
-    fetch(`${API_BASE}/users`).then(r => r.json()).then(data => {
-      if (Array.isArray(data)) setAllUsers(data);
-    }).catch(() => {
-      const local = JSON.parse(localStorage.getItem('opas_users') || '[]');
-      setAllUsers([...MOCK_USERS_LIST, ...local]);
-    });
+    fetch(`${API_BASE}/users`)
+      .then(r => r.ok ? r.json() : [])
+      .then(data => { if (Array.isArray(data)) setAllUsers(data); })
+      .catch(() => showToast('Users cloud disconnected', 'error'));
 
-    const handleStorage = () => setRefresh(prev => prev + 1);
-    window.addEventListener('storage', handleStorage);
-    return () => window.removeEventListener('storage', handleStorage);
-  }, [refresh]);
+    if (activeTab === 'interact') {
+      fetch(`${API_BASE}/messages`)
+        .then(r => r.ok ? r.json() : [])
+        .then(data => { setAllMessages(data); })
+        .catch(() => showToast('Messages cloud disconnected', 'error'));
+    }
+  }, [activeTab, refresh]);
 
   if (!user) return null;
 
@@ -261,12 +255,13 @@ const ParentDashboard: React.FC = () => {
           </div>
           
           <div className="flex-1 p-6 overflow-y-auto space-y-4 no-scrollbar flex flex-col">
-            {JSON.parse(localStorage.getItem('opas_messages') || '[]')
-              .filter((m: any) => (m.sender_id === user.id && m.receiver_id === mentor.id) || (m.sender_id === mentor.id && m.receiver_id === user.id))
+            {allMessages
+              .filter((m: any) => (m.fromId === user.id && m.toId === mentor.id) || (m.fromId === mentor.id && m.toId === user.id))
+              .sort((a,b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
               .map((m: any) => (
-              <div key={m.id} className={`max-w-[70%] p-3 rounded-2xl ${m.sender_id === user.id ? 'bg-indigo-500 text-white self-end rounded-br-sm' : 'bg-white/80 text-slate-800 self-start rounded-bl-sm border border-white/50 shadow-sm'}`}>
-                <p className="text-sm">{m.text}</p>
-                <p className={`text-[9px] mt-1 text-right ${m.sender_id === user.id ? 'text-indigo-200' : 'text-slate-400'}`}>{new Date(m.timestamp).toLocaleTimeString()}</p>
+              <div key={m.id} className={`max-w-[70%] p-3 rounded-2xl ${m.fromId === user.id ? 'bg-indigo-500 text-white self-end rounded-br-sm' : 'bg-white/80 text-slate-800 self-start rounded-bl-sm border border-white/50 shadow-sm'}`}>
+                <p className="text-sm">{m.content}</p>
+                <p className={`text-[9px] mt-1 text-right ${m.fromId === user.id ? 'text-indigo-200' : 'text-slate-400'}`}>{new Date(m.timestamp).toLocaleTimeString()}</p>
               </div>
             ))}
           </div>
@@ -277,39 +272,34 @@ const ParentDashboard: React.FC = () => {
               id="messageInput"
               placeholder="Type your message..."
               className="flex-1 bg-white/50 border border-white/60 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
-              onKeyDown={(e) => {
+              onKeyDown={async (e) => {
                 if (e.key === 'Enter' && e.currentTarget.value.trim()) {
-                  const msgs = JSON.parse(localStorage.getItem('opas_messages') || '[]');
-                  msgs.push({
-                    id: Date.now().toString(),
-                    sender_id: user.id,
-                    receiver_id: mentor.id,
-                    student_id: ward?.id,
-                    text: e.currentTarget.value.trim(),
-                    timestamp: new Date().toISOString()
+                  await fetch(`${API_BASE}/messages`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      fromId: user.id, fromName: user.name,
+                      toId: mentor.id, toName: mentor.name,
+                      content: e.currentTarget.value.trim()
+                    })
                   });
-                  localStorage.setItem('opas_messages', JSON.stringify(msgs));
                   e.currentTarget.value = '';
-                  // Force re-render via state update on window
-                  window.dispatchEvent(new Event('storage'));
+                  setRefresh(r => r + 1);
                 }
               }}
             />
-            <GlassButton variant="primary" onClick={() => {
+            <GlassButton variant="primary" onClick={async () => {
               const input = document.getElementById('messageInput') as HTMLInputElement;
               if (input && input.value.trim()) {
-                const msgs = JSON.parse(localStorage.getItem('opas_messages') || '[]');
-                msgs.push({
-                  id: Date.now().toString(),
-                  sender_id: user.id,
-                  receiver_id: mentor.id,
-                  student_id: ward?.id,
-                  text: input.value.trim(),
-                  timestamp: new Date().toISOString()
+                await fetch(`${API_BASE}/messages`, {
+                  method: 'POST', headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    fromId: user.id, fromName: user.name,
+                    toId: mentor.id, toName: mentor.name,
+                    content: input.value.trim()
+                  })
                 });
-                localStorage.setItem('opas_messages', JSON.stringify(msgs));
                 input.value = '';
-                window.dispatchEvent(new Event('storage'));
+                setRefresh(r => r + 1);
               }
             }}>Send</GlassButton>
           </div>

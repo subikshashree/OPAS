@@ -3,8 +3,12 @@ package com.opas.controller;
 import com.opas.model.User;
 import com.opas.model.Role;
 import com.opas.model.OpasLeave;
+import com.opas.model.Department;
+import com.opas.model.Message;
 import com.opas.repository.UserRepository;
 import com.opas.repository.OpasLeaveRepository;
+import com.opas.repository.DepartmentRepository;
+import com.opas.repository.MessageRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,6 +32,12 @@ public class OpasApiController {
 
     @Autowired
     OpasLeaveRepository opasLeaveRepository;
+
+    @Autowired
+    DepartmentRepository departmentRepository;
+
+    @Autowired
+    MessageRepository messageRepository;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -233,6 +243,74 @@ public class OpasApiController {
         if (opt.isEmpty()) return ResponseEntity.notFound().build();
         opasLeaveRepository.delete(opt.get());
         return ResponseEntity.ok().build();
+    }
+
+    // ══════════════════════════════════════════════════════════════════
+    // ── DEPARTMENT ENDPOINTS
+    // ══════════════════════════════════════════════════════════════════
+
+    @GetMapping("/departments")
+    public ResponseEntity<List<Department>> getAllDepartments() {
+        return ResponseEntity.ok(departmentRepository.findAll());
+    }
+
+    @PostMapping("/departments")
+    public ResponseEntity<Department> createDepartment(@RequestBody Department incoming) {
+        if (incoming.getDepartmentId() == null || incoming.getDepartmentId().isEmpty()) {
+            incoming.setDepartmentId("DEP-" + UUID.randomUUID().toString().substring(0, 5).toUpperCase());
+        }
+        if (incoming.getCreatedAt() == null || incoming.getCreatedAt().isEmpty()) {
+            incoming.setCreatedAt(java.time.Instant.now().toString());
+        }
+        Department saved = departmentRepository.save(incoming);
+        return ResponseEntity.ok(saved);
+    }
+
+    @PutMapping("/departments/{id}")
+    public ResponseEntity<Department> updateDepartment(@PathVariable String id, @RequestBody Department incoming) {
+        Optional<Department> opt = departmentRepository.findById(id);
+        if (opt.isEmpty()) return ResponseEntity.notFound().build();
+        
+        Department existing = opt.get();
+        if (incoming.getDepartmentName() != null) existing.setDepartmentName(incoming.getDepartmentName());
+        if (incoming.getHodId() != null) existing.setHodId(incoming.getHodId());
+        
+        return ResponseEntity.ok(departmentRepository.save(existing));
+    }
+
+    @DeleteMapping("/departments/{id}")
+    public ResponseEntity<Void> deleteDepartment(@PathVariable String id) {
+        if (!departmentRepository.existsById(id)) return ResponseEntity.notFound().build();
+        departmentRepository.deleteById(id);
+        return ResponseEntity.ok().build();
+    }
+
+    // ══════════════════════════════════════════════════════════════════
+    // ── MESSAGE ENDPOINTS
+    // ══════════════════════════════════════════════════════════════════
+
+    @GetMapping("/messages")
+    public ResponseEntity<List<Message>> getMessages(
+            @RequestParam(required = false) String toId,
+            @RequestParam(required = false) String fromId) {
+        if (toId != null) {
+            return ResponseEntity.ok(messageRepository.findByToId(toId));
+        } else if (fromId != null) {
+            return ResponseEntity.ok(messageRepository.findByFromId(fromId));
+        }
+        return ResponseEntity.ok(messageRepository.findAll());
+    }
+
+    @PostMapping("/messages")
+    public ResponseEntity<Message> createMessage(@RequestBody Message msg) {
+        if (msg.getId() == null || msg.getId().isEmpty()) {
+            msg.setId("msg_" + System.currentTimeMillis());
+        }
+        if (msg.getTimestamp() == null || msg.getTimestamp().isEmpty()) {
+            msg.setTimestamp(java.time.Instant.now().toString());
+        }
+        Message saved = messageRepository.save(msg);
+        return ResponseEntity.ok(saved);
     }
 
     // ── HELPER: Convert OpasLeave to frontend-compatible Map ──

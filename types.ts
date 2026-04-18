@@ -150,10 +150,10 @@ export interface AcademicRecord {
 }
 
 export interface Department {
-  department_id: string;
-  department_name: string;
-  hod_id: string;
-  created_at: string;
+  departmentId: string;
+  departmentName: string;
+  hodId: string;
+  createdAt: string;
 }
 
 export interface DepartmentStats {

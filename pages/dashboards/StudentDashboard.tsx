@@ -4,6 +4,8 @@ import { useAuth } from '../../App';
 import { UserRole, LeaveRequest } from '../../types';
 import { MOCK_ACADEMIC_DATA, MOCK_ATTENDANCE, MOCK_PLACEMENT, MOCK_TASKS, MOCK_USERS_LIST } from '../../constants';
 import { GlassCard, GlassButton, GlassBadge, FloatingSphere } from '../../components/ui';
+import { Skeleton, SkeletonTable } from '../../components/ui/Skeleton';
+import { EmptyState } from '../../components/ui/EmptyState';
 import { useToast } from '../../hooks/useToast';
 import { generatePdfPass } from '../../lib/pdfGenerator';
 import QRCode from 'qrcode';
@@ -21,20 +23,24 @@ const StudentDashboard: React.FC = () => {
   const [cloudMentor, setCloudMentor] = useState<any>(null);
   const [cloudParent, setCloudParent] = useState<any>(null);
   const [isLoadingLinks, setIsLoadingLinks] = useState(false);
+  const [isLoadingLeaves, setIsLoadingLeaves] = useState(false);
   const API_BASE = import.meta.env.VITE_API_URL || '/api/opas';
 
   useEffect(() => {
     if (!user) return;
+    setIsLoadingLeaves(true);
     fetch(`${API_BASE}/leaves`)
       .then(r => r.json())
       .then(data => {
         if (Array.isArray(data)) {
-           // Filter only the student's own leaves
            setMyLeaves(data.filter((l: any) => l.userId === user.id || l.studentId === user.studentId || l.studentId === user.id));
         }
       })
       .catch(() => {
         console.error('Failed to load leaves from API');
+      })
+      .finally(() => {
+        setIsLoadingLeaves(false);
       });
   }, [user]);
 
@@ -348,11 +354,14 @@ const StudentDashboard: React.FC = () => {
             </div>
             
             <div className="p-4 md:p-6">
-              {myLeaves.length === 0 ? (
-                <div className="text-center py-10 bg-white/20 rounded-2xl border border-dashed border-slate-300">
-                  <p className="text-4xl mb-4">📭</p>
-                  <p className="text-slate-500 font-semibold">No leave applications found.</p>
-                </div>
+              {isLoadingLeaves ? (
+                <SkeletonTable rows={3} />
+              ) : myLeaves.length === 0 ? (
+                <EmptyState 
+                  icon="📭"
+                  title="No leave applications found"
+                  description="You haven't requested any leaves yet. Click 'New Leave Request' to submit an application."
+                />
               ) : (
                 <div className="space-y-4">
                   {myLeaves.map((leave, i) => (
@@ -363,7 +372,7 @@ const StudentDashboard: React.FC = () => {
                           <GlassBadge variant={leave.type === 'OD' ? 'info' : leave.type === 'SICK' ? 'danger' : 'warning'}>
                             {leave.type.replace('_', ' ')}
                           </GlassBadge>
-                          <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">{new Date(leave.appliedAt).toLocaleDateString()}</span>
+                          <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">{new Date(leave.createdAt).toLocaleDateString()}</span>
                         </div>
                         <p className="text-sm text-slate-700 font-medium">{leave.reason}</p>
                         <p className="text-xs font-semibold text-indigo-600 bg-indigo-50/50 inline-block px-2 py-1 rounded-md border border-indigo-100">

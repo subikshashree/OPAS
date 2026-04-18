@@ -175,9 +175,15 @@ const Login: React.FC = () => {
       <div className="w-full max-w-md p-6 relative z-10 animate-in zoom-in-95 duration-700">
         <GlassCard variant="light" className="p-8 md:p-10 text-center relative overflow-visible">
           
-          {/* Header */}
-          <h1 className="text-4xl font-black tracking-tight text-slate-800 mb-1">Hello!</h1>
-          <p className="text-sm text-slate-500 font-medium mb-8">Sign in to your account</p>
+          {/* Branding */}
+          <div className="flex justify-center mb-4">
+            <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-3xl flex items-center justify-center font-black text-white text-3xl shadow-[0_8px_30px_rgba(99,102,241,0.4)] border-2 border-white/30">
+              O
+            </div>
+          </div>
+          <h1 className="text-2xl font-black tracking-tight text-slate-800 mb-0.5">OPAS</h1>
+          <p className="text-[11px] font-bold text-indigo-500 uppercase tracking-[0.2em] mb-1">Online Pass Automation System</p>
+          <p className="text-xs text-slate-400 font-medium mb-7">Secure campus access management</p>
 
           {/* Sign In / Sign Up Toggle */}
           <div className="flex bg-slate-100/60 p-1.5 rounded-2xl mb-8 border border-slate-200/50">

@@ -29,7 +29,7 @@ export const GlassCard = React.forwardRef<HTMLDivElement, GlassCardProps>(
       >
         <div className="glass-reflection rounded-3xl" />
         <div className="glass-content">
-          {children}
+          {children as React.ReactNode}
         </div>
       </motion.div>
     );

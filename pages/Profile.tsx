@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../App';
 import { GlassCard, GlassBadge, FloatingSphere, GlassButton, GlassInput } from '../components/ui';
+import { UserRole } from '../types';
 
 interface RelationUser {
   id: string;
@@ -192,7 +193,7 @@ const Profile: React.FC = () => {
         </GlassCard>
 
         {/* ── Identity Links Summary (right column) ── */}
-        {user?.roles.includes('STUDENT') && (
+        {user?.roles.includes(UserRole.STUDENT) && (
           <GlassCard variant="light" className="p-8">
             <h2 className="text-2xl font-bold mb-6 flex items-center gap-3 text-slate-800">
               <span className="p-2.5 bg-purple-500/10 rounded-xl text-purple-600">🔗</span> 
@@ -240,7 +241,7 @@ const Profile: React.FC = () => {
       </div>
 
       {/* ── Detailed Identity Link Cards (full width) ── */}
-      {user?.roles.includes('STUDENT') && hasAnyLinks && (
+      {user?.roles.includes(UserRole.STUDENT) && hasAnyLinks && (
         <div className="space-y-6 z-10 relative">
           <h2 className="text-2xl font-bold flex items-center gap-3 text-slate-800 px-1">
             <span className="p-2.5 bg-gradient-to-br from-indigo-500/10 to-purple-500/10 rounded-xl text-indigo-600">📋</span> 

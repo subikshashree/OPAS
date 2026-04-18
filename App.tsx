@@ -1,5 +1,6 @@
 import React, { useState, useEffect, createContext, useContext } from 'react';
 import { HashRouter, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom';
+import { AnimatePresence, motion } from 'framer-motion';
 import { UserRole, User } from './types';
 import { MOCK_USERS_LIST, NAV_ITEMS } from './constants';
 import Dashboard from './pages/Dashboard';
@@ -137,11 +138,61 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         </nav>
       </header>
 
-      <main className="flex-1 flex flex-col items-center pt-32 pb-12 px-4 relative z-10 w-full">
-        <div className="w-full max-w-6xl">
-          {children}
+      <main className="flex-1 flex flex-col items-center pt-28 pb-20 md:pb-12 px-4 relative z-10 w-full overflow-x-hidden">
+        <div className="w-full max-w-6xl flex-1 flex flex-col">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={location.pathname}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.3, ease: 'easeOut' }}
+              className="flex-1"
+            >
+              {children}
+            </motion.div>
+          </AnimatePresence>
         </div>
       </main>
+
+      {/* Professional Footer */}
+      <footer className="w-full relative z-10 py-6 border-t border-white/20 bg-white/10 backdrop-blur-md mt-auto hidden md:block">
+        <div className="max-w-6xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4 text-xs font-medium text-slate-500">
+          <div className="flex items-center gap-2">
+            <div className="w-5 h-5 bg-indigo-500 rounded-lg flex items-center justify-center text-white text-[10px] font-bold">O</div>
+            <span>© {new Date().getFullYear()} OPAS. All rights reserved.</span>
+          </div>
+          <div className="flex items-center gap-6">
+            <a href="#" className="hover:text-indigo-600 transition-colors">Privacy Policy</a>
+            <a href="#" className="hover:text-indigo-600 transition-colors">Terms of Service</a>
+            <a href="#" className="hover:text-indigo-600 transition-colors">Support</a>
+            <span className="px-2 py-1 rounded-md bg-white/30 text-slate-600 border border-white/40">v2.1.0</span>
+          </div>
+        </div>
+      </footer>
+
+      {/* Mobile Bottom Navigation */}
+      {!['PARENT', 'HOD', 'WARDEN', 'FACULTY'].includes(primaryRole) && currentNav.length > 0 && (
+        <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-xl border-t border-white shadow-[0_-4px_20px_rgba(0,0,0,0.05)] pb-safe">
+          <div className="flex items-center justify-around p-2">
+            {currentNav.slice(0, 4).map((item) => {
+              const isActive = location.pathname === item.path;
+              return (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  className={`flex flex-col items-center gap-1 p-2 min-w-[64px] rounded-xl transition-all duration-300 ${
+                    isActive ? "text-indigo-600 bg-indigo-50/50" : "text-slate-500 hover:bg-slate-50"
+                  }`}
+                >
+                  <span className="text-xl">{item.icon}</span>
+                  <span className="text-[10px] font-bold tracking-tight">{item.label}</span>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       <CommandPalette 
         isOpen={showPalette} 

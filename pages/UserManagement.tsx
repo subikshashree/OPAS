@@ -28,19 +28,19 @@ const UserManagement: React.FC = () => {
   const [formWarden, setFormWarden] = useState<string>('');
 
   const fetchUsers = async () => {
+    setIsSyncing(true);
     try {
       const res = await fetch(`${API_BASE}/users`);
       if (res.ok) {
         const data = await res.json();
         setUsers(data);
       } else {
-        // Fallback to local storage
-        const savedUsers = localStorage.getItem('opas_users');
-        setUsers(savedUsers ? JSON.parse(savedUsers) : MOCK_USERS_LIST);
+        showToast('Failed to fetch from Cloud', 'error');
       }
     } catch (e) {
-      const savedUsers = localStorage.getItem('opas_users');
-      setUsers(savedUsers ? JSON.parse(savedUsers) : MOCK_USERS_LIST);
+      showToast('Cloud API Unreachable', 'error');
+    } finally {
+      setIsSyncing(false);
     }
   };
 
@@ -67,23 +67,17 @@ const UserManagement: React.FC = () => {
 
       if (res.ok) {
         const updatedUser = await res.json();
-        const updatedUsers = users.map(u => u.id === userId ? updatedUser : u);
-        setUsers(updatedUsers);
-        localStorage.setItem('opas_users', JSON.stringify(updatedUsers));
+        setUsers(users.map(u => u.id === userId ? updatedUser : u));
         showToast('User role updated in Cloud!', 'success');
       } else {
-        throw new Error('Failed to update cloud');
+        showToast('Cloud update rejected', 'error');
       }
 
       const nextRoles = { ...selectedRoles };
       delete nextRoles[userId];
       setSelectedRoles(nextRoles);
     } catch (e) {
-      // Fallback for local update
-      const updatedUsers = users.map(u => u.id === userId ? { ...u, roles: [newRole] } : u);
-      setUsers(updatedUsers);
-      localStorage.setItem('opas_users', JSON.stringify(updatedUsers));
-      showToast('Backend unavailable. Updated locally.', 'warning');
+      showToast('Backend unavailable', 'error');
     } finally {
       setIsSyncing(false);
     }
@@ -114,35 +108,32 @@ const UserManagement: React.FC = () => {
       });
 
       if (res.ok) {
-        // Also update parent/mentor symmetrically if they are in the list
-        // For simplicity in cloud mode, we fetch again or update local state
+        // Handle symmetric updates strictly in API to maintain DB integrity
+        if (formParent) {
+          await fetch(`${API_BASE}/users/${formParent}`, {
+            method: 'PUT', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ wardId: configuringUser.id })
+          });
+        }
+        if (formMentor) {
+          const m = users.find(u => u.id === formMentor);
+          if (m) {
+            const mList = m.menteeIds || [];
+            if (!mList.includes(configuringUser.id)) {
+              await fetch(`${API_BASE}/users/${formMentor}`, {
+                method: 'PUT', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ menteeIds: [...mList, configuringUser.id].join(',') })
+              });
+            }
+          }
+        }
         await fetchUsers();
         showToast('Relationships synced to Cloud!', 'success');
       } else {
-        throw new Error('Cloud update failed');
+        showToast('Cloud update failed', 'error');
       }
     } catch (e) {
-      // Local fallback logic
-      const oldParentId = configuringUser.parentId;
-      const oldMentorId = configuringUser.mentorId;
-      const updatedUsers = users.map(u => {
-        if (u.id === configuringUser.id) {
-          return { ...u, parentId: formParent || undefined, mentorId: formMentor || undefined, wardenId: formWarden || undefined };
-        }
-        if (u.id === formParent && formParent) return { ...u, wardId: configuringUser.id };
-        if (oldParentId && u.id === oldParentId && u.id !== formParent) return { ...u, wardId: undefined };
-        if (u.id === formMentor && formMentor) {
-          const mentees = u.menteeIds || [];
-          return { ...u, menteeIds: mentees.includes(configuringUser.id) ? mentees : [...mentees, configuringUser.id] };
-        }
-        if (oldMentorId && u.id === oldMentorId && u.id !== formMentor) {
-          return { ...u, menteeIds: (u.menteeIds || []).filter(mid => mid !== configuringUser.id) };
-        }
-        return u;
-      });
-      setUsers(updatedUsers);
-      localStorage.setItem('opas_users', JSON.stringify(updatedUsers));
-      showToast('Links saved locally.', 'warning');
+      showToast('API unreachable', 'error');
     } finally {
       setIsSyncing(false);
       setConfiguringUser(null);
