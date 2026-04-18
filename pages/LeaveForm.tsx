@@ -65,7 +65,7 @@ const LeaveForm: React.FC<LeaveFormProps> = ({ forceType }) => {
       appliedAt: currentTime.toISOString()
     };
 
-    // Send to Cloud Database
+    // Send to Database
     fetch(`${import.meta.env.VITE_API_URL || '/api/opas'}/leaves`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -73,17 +73,12 @@ const LeaveForm: React.FC<LeaveFormProps> = ({ forceType }) => {
     })
     .then(res => {
       if (!res.ok) throw new Error('Failed to post leave');
-      // For immediate fallback viewing in the exact same window
-      const existingLeaves = JSON.parse(localStorage.getItem('opas_my_leaves') || '[]');
-      localStorage.setItem('opas_my_leaves', JSON.stringify([newLeave, ...existingLeaves]));
-      
       // Navigate back to the dashboard leave portal tab
       navigate('/', { state: { targetTab: 'leave' } });
     })
     .catch(err => {
       console.error('Submission error:', err);
       setIsSubmitting(false);
-      // Fallback: Optionally surface error toaster here
     });
   };
 

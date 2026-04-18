@@ -2,7 +2,11 @@ package com.opas.controller;
 
 import com.opas.model.User;
 import com.opas.model.Role;
+import com.opas.model.OpasLeave;
 import com.opas.repository.UserRepository;
+import com.opas.repository.OpasLeaveRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.type.TypeReference;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -21,6 +25,11 @@ public class OpasApiController {
 
     @Autowired
     UserRepository userRepository;
+
+    @Autowired
+    OpasLeaveRepository opasLeaveRepository;
+
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     // ── LOGIN / REGISTER via Email ──────────────────────────────────
     /**
@@ -129,6 +138,139 @@ public class OpasApiController {
 
         User saved = userRepository.save(user);
         return ResponseEntity.ok(userToMap(saved));
+    }
+
+    // ══════════════════════════════════════════════════════════════════
+    // ── LEAVE ENDPOINTS (full CRUD for React frontend) ─────────────
+    // ══════════════════════════════════════════════════════════════════
+
+    /**
+     * GET /api/opas/leaves — Return all leaves as flat JSON matching frontend schema.
+     */
+    @GetMapping("/leaves")
+    public ResponseEntity<List<Map<String, Object>>> getAllLeaves() {
+        List<OpasLeave> all = opasLeaveRepository.findAll();
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (OpasLeave leave : all) {
+            result.add(leaveToMap(leave));
+        }
+        return ResponseEntity.ok(result);
+    }
+
+    /**
+     * POST /api/opas/leaves — Create a new leave request.
+     */
+    @PostMapping("/leaves")
+    public ResponseEntity<Map<String, Object>> createLeave(@RequestBody Map<String, Object> body) {
+        OpasLeave leave = new OpasLeave();
+        leave.setId((String) body.getOrDefault("id", "leave_" + System.currentTimeMillis()));
+        leave.setUserId(String.valueOf(body.getOrDefault("userId", "")));
+        leave.setStudentId(String.valueOf(body.getOrDefault("studentId", "")));
+        leave.setStudentName((String) body.getOrDefault("studentName", ""));
+        leave.setStudentDepartment((String) body.getOrDefault("studentDepartment", ""));
+        leave.setResidentialType((String) body.getOrDefault("residentialType", ""));
+        leave.setStartDate((String) body.getOrDefault("startDate", ""));
+        leave.setStartTime((String) body.getOrDefault("startTime", ""));
+        leave.setEndDate((String) body.getOrDefault("endDate", ""));
+        leave.setEndTime((String) body.getOrDefault("endTime", ""));
+        leave.setType((String) body.getOrDefault("type", "NORMAL"));
+        leave.setReason((String) body.getOrDefault("reason", ""));
+        leave.setStatus((String) body.getOrDefault("status", "Pending"));
+        leave.setMentorId(body.get("mentorId") != null ? String.valueOf(body.get("mentorId")) : null);
+        leave.setParentId(body.get("parentId") != null ? String.valueOf(body.get("parentId")) : null);
+        leave.setWardenId(body.get("wardenId") != null ? String.valueOf(body.get("wardenId")) : null);
+        leave.setIsHosteler(body.get("isHosteler") instanceof Boolean ? (Boolean) body.get("isHosteler") : false);
+        leave.setAppliedAt((String) body.getOrDefault("appliedAt", new java.util.Date().toString()));
+
+        // Convert approvals array to JSON string
+        Object approvals = body.get("approvals");
+        if (approvals != null) {
+            try {
+                leave.setApprovalsJson(objectMapper.writeValueAsString(approvals));
+            } catch (Exception e) {
+                leave.setApprovalsJson("[]");
+            }
+        } else {
+            leave.setApprovalsJson("[]");
+        }
+
+        OpasLeave saved = opasLeaveRepository.save(leave);
+        return ResponseEntity.ok(leaveToMap(saved));
+    }
+
+    /**
+     * PUT /api/opas/leaves/{id} — Update leave status and approvals.
+     */
+    @PutMapping("/leaves/{id}")
+    public ResponseEntity<Map<String, Object>> updateLeave(
+            @PathVariable String id,
+            @RequestBody Map<String, Object> body) {
+        Optional<OpasLeave> opt = opasLeaveRepository.findById(id);
+        if (opt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        OpasLeave leave = opt.get();
+
+        if (body.containsKey("status")) leave.setStatus((String) body.get("status"));
+        if (body.containsKey("reason")) leave.setReason((String) body.get("reason"));
+
+        if (body.containsKey("approvals")) {
+            try {
+                leave.setApprovalsJson(objectMapper.writeValueAsString(body.get("approvals")));
+            } catch (Exception e) { /* keep existing */ }
+        }
+
+        OpasLeave saved = opasLeaveRepository.save(leave);
+        return ResponseEntity.ok(leaveToMap(saved));
+    }
+
+    /**
+     * DELETE /api/opas/leaves/{id}
+     */
+    @DeleteMapping("/leaves/{id}")
+    public ResponseEntity<Void> deleteLeave(@PathVariable String id) {
+        Optional<OpasLeave> opt = opasLeaveRepository.findById(id);
+        if (opt.isEmpty()) return ResponseEntity.notFound().build();
+        opasLeaveRepository.delete(opt.get());
+        return ResponseEntity.ok().build();
+    }
+
+    // ── HELPER: Convert OpasLeave to frontend-compatible Map ──
+    private Map<String, Object> leaveToMap(OpasLeave leave) {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("id", leave.getId());
+        m.put("userId", leave.getUserId());
+        m.put("studentId", leave.getStudentId());
+        m.put("studentName", leave.getStudentName());
+        m.put("studentDepartment", leave.getStudentDepartment());
+        m.put("residentialType", leave.getResidentialType());
+        m.put("startDate", leave.getStartDate());
+        m.put("startTime", leave.getStartTime());
+        m.put("endDate", leave.getEndDate());
+        m.put("endTime", leave.getEndTime());
+        m.put("type", leave.getType());
+        m.put("reason", leave.getReason());
+        m.put("status", leave.getStatus());
+        m.put("mentorId", leave.getMentorId());
+        m.put("parentId", leave.getParentId());
+        m.put("wardenId", leave.getWardenId());
+        m.put("isHosteler", leave.getIsHosteler());
+        m.put("appliedAt", leave.getAppliedAt());
+
+        // Parse approvals JSON back to array
+        try {
+            if (leave.getApprovalsJson() != null && !leave.getApprovalsJson().isEmpty()) {
+                List<Map<String, Object>> approvals = objectMapper.readValue(
+                    leave.getApprovalsJson(), new TypeReference<List<Map<String, Object>>>() {});
+                m.put("approvals", approvals);
+            } else {
+                m.put("approvals", List.of());
+            }
+        } catch (Exception e) {
+            m.put("approvals", List.of());
+        }
+
+        return m;
     }
 
     // ── HELPER: Convert JPA User entity to a flat Map matching React frontend schema ──

@@ -29,41 +29,7 @@ const InsightBox: React.FC<{ req: any }> = ({ req }) => {
   );
 };
 
-const MOCK_REQUESTS: any[] = [
-  {
-    id: 'req1',
-    studentId: 'CS2024001',
-    studentName: 'Alex Johnson',
-    startDate: '2024-10-25',
-    endDate: '2024-10-26',
-    type: 'NORMAL',
-    reason: 'Family function in hometown',
-    status: 'Pending',
-    approvals: []
-  },
-  {
-    id: 'req2',
-    studentId: 'CS2024004',
-    studentName: 'David Wilson',
-    startDate: '2024-10-25',
-    endDate: '2024-10-25',
-    type: 'OD',
-    reason: 'Inter-college Technical Symposium Paper Presentation',
-    status: 'Pending',
-    approvals: [{ role: UserRole.PARENT, timestamp: new Date().toISOString(), approved: true }]
-  },
-  {
-    id: 'req3',
-    studentId: 'CS2024001',
-    studentName: 'Alex Johnson',
-    startDate: '2024-10-24',
-    endDate: '2024-10-25',
-    type: 'SICK',
-    reason: 'Severe fever and exhaustion',
-    status: 'Pending',
-    approvals: []
-  }
-];
+
 
 const Approvals: React.FC = () => {
   const { user } = useAuth();
@@ -76,13 +42,11 @@ const Approvals: React.FC = () => {
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) {
-          setRequests([...data, ...MOCK_REQUESTS.filter(m => !data.some(d => d.id === m.id))]);
+          setRequests(data);
         }
       })
       .catch(err => {
         console.error('Fetch leaves error', err);
-        const globalLeaves = JSON.parse(localStorage.getItem('opas_global_leaves') || '[]');
-        setRequests([...globalLeaves, ...MOCK_REQUESTS]);
       });
   }, [API_BASE]);
 
@@ -112,17 +76,14 @@ const Approvals: React.FC = () => {
     setRequests(prev => prev.map(r => r.id === id ? { ...r, status: newStatus, approvals: newApprovals } : r));
 
     try {
-      const res = await fetch(`${API_BASE}/leaves/${id}`, {
+      await fetch(`${API_BASE}/leaves/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus, approvals: newApprovals })
       });
     } catch (e) {
-      console.warn('Cloud update failed, updating local storage fallback.');
+      console.warn('API update failed.');
     }
-
-    const updatedRequests = requests.map(r => r.id === id ? { ...r, status: newStatus, approvals: newApprovals } : r);
-    localStorage.setItem('opas_global_leaves', JSON.stringify(updatedRequests.filter(r => String(r.id).startsWith('leave'))));
     
     showToast(`Request ${approved ? 'Authorized' : 'Terminated'} successfully! Workflow updated.`, approved ? 'success' : 'error');
   };

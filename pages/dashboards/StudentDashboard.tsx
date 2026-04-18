@@ -34,8 +34,7 @@ const StudentDashboard: React.FC = () => {
         }
       })
       .catch(() => {
-        const saved = JSON.parse(localStorage.getItem('opas_my_leaves') || '[]');
-        setMyLeaves(saved);
+        console.error('Failed to load leaves from API');
       });
   }, [user]);
 
