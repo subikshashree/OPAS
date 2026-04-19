@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../App';
 import { UserRole, LeaveType } from '../types';
 import { GlassCard, GlassButton, GlassInput, GlassBadge } from '../components/ui';
+import { getNextPendingStatus } from '../hooks/useLeaveWorkflow';
 interface LeaveFormProps {
   forceType?: LeaveType;
 }
@@ -59,7 +60,7 @@ const LeaveForm: React.FC<LeaveFormProps> = ({ forceType }) => {
       endTime: formData.endTime,
       type: formData.type,
       reason: formData.reason,
-      status: 'Pending',
+      status: getNextPendingStatus(formData.type, isHosteler, 0),
       approvals: [],
       // Ensure applied time perfectly matches what the user saw
       appliedAt: currentTime.toISOString()

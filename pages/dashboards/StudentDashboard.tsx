@@ -8,6 +8,7 @@ import { Skeleton, SkeletonTable } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { useToast } from '../../hooks/useToast';
 import { generatePdfPass } from '../../lib/pdfGenerator';
+import { getWorkflowSteps } from '../../hooks/useLeaveWorkflow';
 import QRCode from 'qrcode';
 
 const StudentDashboard: React.FC = () => {
@@ -67,6 +68,19 @@ const StudentDashboard: React.FC = () => {
   }, [user, API_BASE]);
 
   if (!user) return null;
+
+  const normalWorkflow = getWorkflowSteps('NORMAL', user.isHosteler || false);
+  const odWorkflow = getWorkflowSteps('OD', user.isHosteler || false);
+
+  const getStatusDisplay = (status: string) => {
+    if (status === 'Approved') return { text: '✅ Approved', variant: 'success' };
+    if (status === 'Rejected') return { text: '❌ Rejected', variant: 'danger' };
+    if (status.startsWith('PENDING_')) {
+      const role = status.replace('PENDING_', '');
+      return { text: `⏳ Pending ${role}`, variant: 'warning' };
+    }
+    return { text: '⏳ Pending', variant: 'warning' };
+  };
 
   const studentId = user.id;
   const attendance = MOCK_ATTENDANCE[studentId] || MOCK_ATTENDANCE['1001'] || [];
@@ -337,15 +351,37 @@ const StudentDashboard: React.FC = () => {
       {activeTab === 'leave' && (
         <div className="space-y-6">
           <GlassCard variant="light" className="p-8">
-            <h2 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2"><span className="text-2xl">⚙️</span> Approval Workflow</h2>
-            <div className="flex flex-wrap items-center gap-3">
-              <span className="px-4 py-2 bg-white/50 rounded-xl text-sm font-bold text-indigo-700 border border-indigo-200/50">Parent</span>
-              <span className="text-indigo-300 font-bold">+</span>
-              <span className="px-4 py-2 bg-white/50 rounded-xl text-sm font-bold text-indigo-700 border border-indigo-200/50">Mentor</span>
-              <span className="text-indigo-300 font-bold">→</span>
-              <span className="px-4 py-2 bg-emerald-50 rounded-xl text-sm font-bold text-emerald-700 border border-emerald-200/50">✅ Approved</span>
+            <h2 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2"><span className="text-2xl">⚙️</span> Your Approval Workflows</h2>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <div>
+                <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Normal / Sick Leave</h3>
+                <div className="flex flex-wrap items-center gap-2">
+                  {normalWorkflow.map((step, idx) => (
+                    <React.Fragment key={idx}>
+                      <span className="px-4 py-2 bg-white/50 rounded-xl text-xs font-bold text-indigo-700 border border-indigo-200/50 shadow-sm">{step.label}</span>
+                      <span className="text-indigo-300 font-bold text-xs">→</span>
+                    </React.Fragment>
+                  ))}
+                  <span className="px-4 py-2 bg-emerald-50 rounded-xl text-xs font-bold text-emerald-700 border border-emerald-200/50 shadow-sm">✅ Approved</span>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-3">On Duty (OD)</h3>
+                <div className="flex flex-wrap items-center gap-2">
+                  {odWorkflow.map((step, idx) => (
+                    <React.Fragment key={idx}>
+                      <span className="px-4 py-2 bg-white/50 rounded-xl text-xs font-bold text-indigo-700 border border-indigo-200/50 shadow-sm">{step.label}</span>
+                      <span className="text-indigo-300 font-bold text-xs">→</span>
+                    </React.Fragment>
+                  ))}
+                  <span className="px-4 py-2 bg-emerald-50 rounded-xl text-xs font-bold text-emerald-700 border border-emerald-200/50 shadow-sm">✅ Approved</span>
+                </div>
+              </div>
             </div>
-            <p className="text-xs text-slate-400 mt-3 font-medium">Both Parent and Mentor must approve for the leave to be finalized.</p>
+            
+            <p className="text-xs text-slate-400 mt-5 font-medium">Workflows are dynamically enforced based on your current residential status.</p>
           </GlassCard>
 
           <GlassCard variant="light" className="p-0 overflow-hidden">
@@ -381,12 +417,8 @@ const StudentDashboard: React.FC = () => {
                       </div>
 
                       <div className="flex flex-col items-end justify-center min-w-[120px]">
-                        <GlassBadge variant={leave.status === 'Pending' ? 'warning' : leave.status === 'Approved' ? 'success' : 'danger'} className="text-sm px-4 py-1.5 shadow-sm">
-                          {leave.status === 'Pending' 
-                           ? '⏳ Pending' 
-                           : (leave.status === 'Approved')
-                             ? `✅ Approved`
-                             : leave.status}
+                        <GlassBadge variant={getStatusDisplay(leave.status).variant as any} className="text-sm px-4 py-1.5 shadow-sm">
+                          {getStatusDisplay(leave.status).text}
                         </GlassBadge>
                         <span className="text-[9px] text-slate-400 font-bold mt-2 uppercase tracking-wider">Current Status</span>
                         

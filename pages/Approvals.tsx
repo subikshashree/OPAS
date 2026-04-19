@@ -3,7 +3,7 @@ import { useAuth } from '../App';
 import { UserRole, LeaveRequest } from '../types';
 import { GlassCard, GlassButton, GlassBadge, FloatingSphere } from '../components/ui';
 import { useToast } from '../hooks/useToast';
-import { canUserApprove, getNextPendingStatus } from '../hooks/useLeaveWorkflow';
+import { canUserApprove, getNextPendingStatus, getLeaveWorkflow } from '../hooks/useLeaveWorkflow';
 import { getMentorInsight } from '../geminiService';
 
 const InsightBox: React.FC<{ req: any }> = ({ req }) => {
@@ -108,8 +108,18 @@ const Approvals: React.FC = () => {
     if (!isMyStudent) return false;
 
     // 2. Status check
-    const alreadyApproved = req.approvals?.some((a: any) => a.role === user?.roles[0]);
-    return req.status === 'Pending' && !alreadyApproved;
+    const currentRole = user?.roles[0] as UserRole;
+    
+    if (req.status === 'Approved' || req.status === 'Rejected') return false;
+    
+    // Legacy support for 'Pending'
+    if (req.status === 'Pending') {
+      const firstRole = getLeaveWorkflow(req.type, req.isHosteler || false)[0];
+      return firstRole === currentRole;
+    }
+    
+    // Strict node check
+    return canUserApprove(currentRole, req.status as any);
   });
 
   return (
