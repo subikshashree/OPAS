@@ -170,12 +170,12 @@ const UserManagement: React.FC = () => {
           <table className="w-full text-left">
             <thead className="bg-[#f4f3ef]/30 text-[11px] uppercase font-extrabold text-slate-500 tracking-widest border-b border-white/50">
               <tr>
-                <th className="px-5 md:px-6 py-4 whitespace-nowrap">Name</th>
-                <th className="px-5 md:px-6 py-4 whitespace-nowrap">User ID</th>
-                <th className="px-5 md:px-6 py-4 whitespace-nowrap hidden lg:table-cell">Email</th>
-                <th className="px-5 md:px-6 py-4 whitespace-nowrap">Current Role</th>
-                <th className="px-5 md:px-6 py-4 whitespace-nowrap">Assign Role</th>
-                <th className="px-5 md:px-6 py-4 text-right whitespace-nowrap">Actions</th>
+                <th className="px-5 md:px-6 py-4">Name</th>
+                <th className="px-5 md:px-6 py-4">User ID</th>
+                <th className="px-5 md:px-6 py-4 hidden lg:table-cell">Email</th>
+                <th className="px-5 md:px-6 py-4">Current Role</th>
+                <th className="px-5 md:px-6 py-4">Assign Role</th>
+                <th className="px-5 md:px-6 py-4 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/40">
@@ -189,8 +189,8 @@ const UserManagement: React.FC = () => {
 
                 return (
                   <tr key={user.id} className="hover:bg-white/30 transition-colors">
-                    <td className="px-5 md:px-6 py-4 whitespace-nowrap min-w-[180px]">
-                      <div className="font-bold text-slate-800">{user.name}</div>
+                    <td className="px-5 md:px-6 py-4 min-w-[200px]">
+                      <div className="font-bold text-slate-800 break-words">{user.name}</div>
                       {currentPrimaryRole === UserRole.PARENT && user.wardId && (
                         <div className="text-[10px] text-emerald-600 font-bold mt-0.5 tracking-wide">
                           ↳ Guardian of: {resolveName(user.wardId)}
@@ -208,11 +208,13 @@ const UserManagement: React.FC = () => {
                         </div>
                       )}
                     </td>
-                    <td className="px-5 md:px-6 py-4 whitespace-nowrap">
-                      <span className="bg-slate-100 text-slate-600 font-mono text-xs px-2 py-1 rounded-md border border-slate-200">{user.id}</span>
+                    <td className="px-5 md:px-6 py-4">
+                      <span className="bg-slate-100/90 text-slate-600 font-mono text-xs px-2.5 py-1.5 rounded-md border border-slate-200/80 shadow-sm" title={user.id}>
+                        {user.id.length > 8 ? `...${user.id.substring(user.id.length - 8)}` : user.id}
+                      </span>
                     </td>
-                    <td className="px-5 md:px-6 py-4 text-slate-600 text-sm hidden lg:table-cell whitespace-nowrap">{user.email}</td>
-                    <td className="px-5 md:px-6 py-4 whitespace-nowrap">
+                    <td className="px-5 md:px-6 py-4 text-slate-600 text-sm hidden lg:table-cell max-w-[200px] truncate" title={user.email}>{user.email}</td>
+                    <td className="px-5 md:px-6 py-4">
                       <GlassBadge variant={
                         currentPrimaryRole === UserRole.ADMIN ? 'danger' : 
                         currentPrimaryRole === UserRole.FACULTY ? 'info' : 
@@ -221,9 +223,9 @@ const UserManagement: React.FC = () => {
                         {currentPrimaryRole === UserRole.FACULTY ? 'MENTOR' : currentPrimaryRole}
                       </GlassBadge>
                     </td>
-                    <td className="px-5 md:px-6 py-4 whitespace-nowrap">
+                    <td className="px-5 md:px-6 py-4">
                       <select 
-                        className="bg-white/50 border border-slate-200 rounded-lg px-3 py-1.5 text-sm font-semibold focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 w-32 md:w-36"
+                        className="bg-white/50 border border-slate-200 rounded-lg px-3 py-1.5 text-sm font-semibold focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 w-full min-w-[120px] max-w-[150px]"
                         value={selectedRoles[user.id] || currentPrimaryRole}
                         onChange={(e) => handleRoleChange(user.id, e.target.value)}
                         disabled={isSyncing}
