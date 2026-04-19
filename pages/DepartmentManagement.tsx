@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Department, UserRole } from '../types';
-import { MOCK_DEPARTMENTS, MOCK_USERS_LIST } from '../constants';
 import { GlassCard, GlassBadge, FloatingSphere, GlassButton } from '../components/ui';
 import { useToast } from '../hooks/useToast';
 
 const DepartmentManagement: React.FC = () => {
   const API_BASE = import.meta.env.VITE_API_URL || '/api/opas';
   const [departments, setDepartments] = useState<Department[]>([]);
+  const [users, setUsers] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { showToast, ToastComponent } = useToast();
   
@@ -19,17 +19,19 @@ const DepartmentManagement: React.FC = () => {
   const [formHod, setFormHod] = useState('');
 
   // Derived selectors
-  const hodCandidates = MOCK_USERS_LIST.filter(u => u.roles.includes(UserRole.HOD) || u.roles.includes(UserRole.FACULTY));
+  const hodCandidates = users.filter(u => u.roles && (u.roles.includes(UserRole.HOD) || u.roles.includes(UserRole.FACULTY)));
 
-  const fetchDepartments = async () => {
+  const fetchInitialData = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/departments`);
-      if (res.ok) {
-        setDepartments(await res.json());
-      } else {
-        showToast('Failed to load departments', 'error');
-      }
+      const [deptRes, userRes] = await Promise.all([
+        fetch(`${API_BASE}/departments`),
+        fetch(`${API_BASE}/users`)
+      ]);
+      if (deptRes.ok) setDepartments(await deptRes.json());
+      else showToast('Failed to load departments', 'error');
+      
+      if (userRes.ok) setUsers(await userRes.json());
     } catch (e) {
       showToast('API unreachable', 'error');
     } finally {
@@ -38,7 +40,7 @@ const DepartmentManagement: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchDepartments();
+    fetchInitialData();
   }, []);
 
   const handleEdit = (dept: Department) => {
@@ -56,8 +58,8 @@ const DepartmentManagement: React.FC = () => {
   };
 
   const calculateTotalStudents = (deptName: string) => {
-    // We dynamically count how many students belong to this department from MOCK_USERS_LIST
-    return MOCK_USERS_LIST.filter(u => u.roles.includes(UserRole.STUDENT) && u.department === deptName).length;
+    // We dynamically count how many students belong to this department from the backend users list
+    return users.filter(u => u.roles && u.roles.includes(UserRole.STUDENT) && u.department === deptName).length;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -72,6 +74,13 @@ const DepartmentManagement: React.FC = () => {
           body: JSON.stringify({ departmentName: formName, hodId: formHod })
         });
         if (res.ok) {
+          if (formHod && formHod !== editingDept?.hodId) {
+            await fetch(`${API_BASE}/users/${formHod}`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ department: formName, role: UserRole.HOD })
+            });
+          }
           showToast('Department updated successfully', 'success');
         } else throw new Error();
       } else {
@@ -81,11 +90,18 @@ const DepartmentManagement: React.FC = () => {
           body: JSON.stringify({ departmentName: formName, hodId: formHod })
         });
         if (res.ok) {
+          if (formHod) {
+            await fetch(`${API_BASE}/users/${formHod}`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ department: formName, role: UserRole.HOD })
+            });
+          }
           showToast('Department created successfully', 'success');
         } else throw new Error();
       }
       
-      await fetchDepartments();
+      await fetchInitialData();
       setIsModalOpen(false);
     } catch (e) {
       showToast('Operation failed', 'error');
@@ -93,7 +109,7 @@ const DepartmentManagement: React.FC = () => {
   };
 
   const getHodName = (hodId: string) => {
-    const user = MOCK_USERS_LIST.find(u => u.id === hodId);
+    const user = users.find(u => String(u.id) === String(hodId));
     return user ? user.name : 'Unassigned';
   };
 

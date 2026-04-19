@@ -65,13 +65,7 @@ const Approvals: React.FC = () => {
     } else {
       newApprovals = [...newApprovals, { role, approverId: user?.id || '', approverName: user?.name || '', timestamp: new Date().toISOString(), approved: true }];
       
-      const hasParent = newApprovals.some(a => a.role === UserRole.PARENT);
-      const hasFaculty = newApprovals.some(a => a.role === UserRole.FACULTY);
-      const hasWarden = newApprovals.some(a => a.role === UserRole.WARDEN);
-      
-      if (hasParent && hasFaculty) {
-         newStatus = 'Approved' as any;
-      }
+      newStatus = getNextPendingStatus(reqToUpdate.type, reqToUpdate.isHosteler || false, newApprovals.length) as any;
     }
 
     // Optimistic UI update
