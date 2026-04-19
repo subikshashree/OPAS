@@ -17,6 +17,7 @@ const ROLES = [
 
 const UserManagement: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
+  const [departments, setDepartments] = useState<any[]>([]);
   const [selectedRoles, setSelectedRoles] = useState<Record<string, UserRole>>({});
   const [isSyncing, setIsSyncing] = useState(false);
   const { showToast, ToastComponent } = useToast();
@@ -26,17 +27,17 @@ const UserManagement: React.FC = () => {
   const [formParent, setFormParent] = useState<string>('');
   const [formMentor, setFormMentor] = useState<string>('');
   const [formWarden, setFormWarden] = useState<string>('');
+  const [formDepartment, setFormDepartment] = useState<string>('');
 
-  const fetchUsers = async () => {
+  const fetchInitialData = async () => {
     setIsSyncing(true);
     try {
-      const res = await fetch(`${API_BASE}/users`);
-      if (res.ok) {
-        const data = await res.json();
-        setUsers(data);
-      } else {
-        showToast('Failed to fetch from Cloud', 'error');
-      }
+      const [uRes, dRes] = await Promise.all([
+        fetch(`${API_BASE}/users`),
+        fetch(`${API_BASE}/departments`)
+      ]);
+      if (uRes.ok) setUsers(await uRes.json());
+      if (dRes.ok) setDepartments(await dRes.json());
     } catch (e) {
       showToast('Cloud API Unreachable', 'error');
     } finally {
@@ -45,7 +46,7 @@ const UserManagement: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchUsers();
+    fetchInitialData();
   }, []);
 
   const handleRoleChange = (userId: string, role: string) => {
@@ -88,6 +89,7 @@ const UserManagement: React.FC = () => {
     setFormParent(user.parentId || '');
     setFormMentor(user.mentorId || '');
     setFormWarden(user.wardenId || '');
+    setFormDepartment(user.department || '');
   };
 
   const handleConfigSave = async (e: React.FormEvent) => {
@@ -103,7 +105,8 @@ const UserManagement: React.FC = () => {
         body: JSON.stringify({ 
           parentId: formParent || null, 
           mentorId: formMentor || null, 
-          wardenId: formWarden || null 
+          wardenId: formWarden || null,
+          department: formDepartment || null
         }),
       });
 
@@ -127,7 +130,7 @@ const UserManagement: React.FC = () => {
             }
           }
         }
-        await fetchUsers();
+        await fetchInitialData();
         showToast('Relationships synced to Cloud!', 'success');
       } else {
         showToast('Cloud update failed', 'error');
@@ -156,7 +159,7 @@ const UserManagement: React.FC = () => {
             <h1 className="text-3xl md:text-4xl font-extrabold text-slate-800 tracking-tight">User Management</h1>
             <p className="text-slate-500 font-medium mt-1">Role assignment and relationship configuration synced to MongoDB.</p>
           </div>
-          <GlassButton variant="secondary" size="sm" onClick={fetchUsers} disabled={isSyncing}>
+          <GlassButton variant="secondary" size="sm" onClick={fetchInitialData} disabled={isSyncing}>
             {isSyncing ? 'Syncing...' : 'Refresh'}
           </GlassButton>
         </div>
@@ -268,6 +271,20 @@ const UserManagement: React.FC = () => {
             <p className="text-sm font-medium text-slate-500 mt-1 mb-6">Mapping guardians and faculty for <strong className="text-indigo-600">{configuringUser.name}</strong></p>
             
             <form onSubmit={handleConfigSave} className="space-y-4">
+              <div>
+                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">Assign Department</label>
+                <select
+                  value={formDepartment}
+                  onChange={e => setFormDepartment(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-semibold focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 transition-all"
+                >
+                  <option value="">-- No Department Assigned --</option>
+                  {departments.map(d => (
+                    <option key={d.departmentId} value={d.departmentName}>{d.departmentName}</option>
+                  ))}
+                </select>
+              </div>
+
               <div>
                 <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">Assign Parent</label>
                 <select
