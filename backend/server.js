@@ -20,6 +20,7 @@ const DB_NAME = process.env.DB_NAME || 'opas_db';
 let db;
 let usersCollection;
 let leavesCollection;
+let departmentsCollection;
 
 async function connectDB() {
   try {
@@ -28,6 +29,7 @@ async function connectDB() {
     db = client.db(DB_NAME);
     usersCollection = db.collection('users');
     leavesCollection = db.collection('leaves');
+    departmentsCollection = db.collection('departments');
     
     // Create unique index on email
     await usersCollection.createIndex({ email: 1 }, { unique: true });
@@ -266,6 +268,64 @@ function formatUser(user) {
     hostelName: user.hostelName || null,
   };
 }
+
+// ─── DEPARTMENTS API ──────────────────────────────────────────────
+
+app.get('/api/opas/departments', async (req, res) => {
+  try {
+    const departments = await departmentsCollection.find({}).toArray();
+    res.json(departments);
+  } catch (err) {
+    console.error('Get departments error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.post('/api/opas/departments', async (req, res) => {
+  try {
+    const newDept = req.body;
+    if (!newDept.departmentName) {
+      return res.status(400).json({ error: 'Missing department name' });
+    }
+    
+    newDept.departmentId = 'DEP-' + Math.random().toString(36).substr(2, 6).toUpperCase();
+    newDept.createdAt = new Date().toISOString();
+    
+    await departmentsCollection.insertOne(newDept);
+    console.log(`📝 New Department created: ${newDept.departmentName}`);
+    res.json(newDept);
+  } catch (err) {
+    console.error('Create department error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.put('/api/opas/departments/:id', async (req, res) => {
+  try {
+    const updateFields = req.body;
+    let result = await departmentsCollection.findOneAndUpdate(
+      { departmentId: req.params.id },
+      { $set: updateFields },
+      { returnDocument: 'after' }
+    );
+    if (!result) return res.status(404).json({ error: 'Department not found' });
+    
+    res.json(result);
+  } catch (err) {
+    console.error('Update department error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.delete('/api/opas/departments/:id', async (req, res) => {
+  try {
+    let result = await departmentsCollection.deleteOne({ departmentId: req.params.id });
+    if (result.deletedCount === 0) return res.status(404).json({ error: 'Department not found' });
+    res.json({ message: 'Department deleted successfully' });
+  } catch (err) {
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
 
 // ─── LEAVES API ──────────────────────────────────────────────────
 
